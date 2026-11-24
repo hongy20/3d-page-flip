@@ -44,4 +44,4 @@ Preserved from `specs/open-questions.md`:
   - `(c)` Debug readout only;
   - `(d)` JS reads `--progress` via `getComputedStyle` instead of `scrollLeft` (note: contradicts `ARCH-06`).
   - Status: **Open**.
-- **`OQ-12` (Snap alignment `start` vs `center`)**: Affects `SCF-05`, `CSS-03`. Must match Phase 1's snap alignment so `--progress = 0` at the snapped position. Status: **Open**.
+- **`OQ-12` (Snap alignment `start` vs `center`)**: Affects `SCF-05`, `CSS-03`. **Decided — `scroll-snap-align: center`**, matching Phase 1's snap alignment so `--progress = 0` at the center-snapped position.
