@@ -12,8 +12,8 @@ Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed phases and
 
 ## Workflow: spec-driven (OpenSpec)
 
-1. **Specs are the source of truth.** All behaviour is defined in `openspec/`. Code that
-   isn't traceable to a spec requirement ID (e.g. `ARCH-03`, `SHD-05`) should not exist.
+1. **Specs are the source of truth.** All behaviour is defined in `openspec/` (`openspec/specs/` and `openspec/changes/`). Code that
+   isn't traceable to an OpenSpec capability requirement should not exist.
 2. **No implementation without an approved spec.** Only implement an OpenSpec change after
    the human has reviewed and approved it.
 3. **Change the spec first.** If implementation reveals the spec is wrong or incomplete,
@@ -40,6 +40,6 @@ Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed phases and
 ## Conventions
 
 - Language: TypeScript (strict). Build tool: Vite.
-- Target browser: Chrome 157+ only (see `ARCH-08`). Don't add polyfills for other browsers.
+- Target browser: Chrome 157+ only. Don't add polyfills for other browsers.
 - Keep dependencies minimal; every runtime dependency needs a spec justification.
 - Follow the repo's existing style; make surgical changes only.
