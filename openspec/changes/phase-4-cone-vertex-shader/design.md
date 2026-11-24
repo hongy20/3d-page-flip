@@ -2,22 +2,22 @@
 
 ## Context
 
-See `proposal.md` for motivation (`VIS-01`, `VIS-04`, `ARCH-06`, `ARCH-10`). Phase 4 (`specs/040-cone-vertex-shader.md`) completes the WebBook 3D pipeline by replacing Phase 3's flat vertex transformation with the Hong, Card & Chen (2006) isometric cone deformation in `src/shaders/cone.vert.glsl` and wiring `book.scrollLeft` to shader uniforms via `coneParams(p)`.
+See `proposal.md` for motivation. Phase 4 completes the WebBook 3D pipeline by replacing Phase 3's flat vertex transformation with the Hong, Card & Chen (2006) isometric cone deformation in `src/shaders/cone.vert.glsl` and wiring `book.scrollLeft` to shader uniforms via `coneParams(p)`.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Implement the exact Hong, Card & Chen cone math in both a pure TypeScript CPU reference function (for unit testing `SHD-07`) and GLSL ES 3.00 (`SHD-01`).
-- Implement `coneParams(p)` in an isolated, unit-tested TypeScript module (`SHD-10`) that guarantees domain invariants (`SHD-03`, `SHD-04`) and flat identity at `p = 0`.
-- Drive shader uniforms strictly from `book.scrollLeft` on change in the `requestAnimationFrame` loop at a steady 60 fps (`SHD-08`, `SHD-09`, `SHD-12`, `ARCH-06`, `ARCH-13`, `VIS-04`).
+- Implement the exact Hong, Card & Chen cone math in both a pure TypeScript CPU reference function (for unit testing) and GLSL ES 3.00.
+- Implement `coneParams(p)` in an isolated, unit-tested TypeScript module that guarantees domain invariants and flat identity at `p = 0`.
+- Drive shader uniforms strictly from `book.scrollLeft` on change in the `requestAnimationFrame` loop at a steady 60 fps.
 
 **Non-Goals:**
-- Cylindrical or non-cone curl approximations (`ARCH-10`).
-- Any JS scroll mutation, input listeners, or animation libraries (`ARCH-01`..`ARCH-03`).
+- Cylindrical or non-cone curl approximations.
+- Any JS scroll mutation, input listeners, or animation libraries.
 
 ## Decisions
 
-1. **Coordinate System & Fixed Cone Equations (`SHD-01`..`SHD-04`, `SHD-07`, `ARCH-10`)**
+1. **Coordinate System & Fixed Cone Equations**
    - *Coordinate System*:
      - Flat page lies in the XY-plane (`z = 0`), with the **Y-axis as the binding** (`x = 0`) and page extent `x in [0, W]`, `y in [0, H]`.
      - Imaginary cone rests on the XY-plane with apex `A = (0, A_y, 0)` on the binding axis and half-angle `theta` (`u_theta`).
@@ -33,13 +33,13 @@ See `proposal.md` for motivation (`VIS-01`, `VIS-04`, `ARCH-06`, `ARCH-10`). Pha
      ```
    - *Rationale*: At `theta = pi/2`, `sin(theta) = 1`, `cos(theta) = 0`, `beta = alpha`, `r = R`, yielding `T_x = R sin(alpha) = P_x`, `T_y = A_y + R cos(alpha) = P_y`, `T_z = 0` (exact identity). For any valid `(theta, A_y)`, the distance to the apex `|T - A|` equals `R` (zero paper stretching). Clamping `P_x / R` to `[-1, 1]` in GLSL absorbs floating-point precision drift at `P_x == R` without altering math behavior.
 
-2. **Isolated Pure Module for `coneParams(p)` and CPU Cone Reference (`SHD-07`, `SHD-10`)**
+2. **Isolated Pure Module for `coneParams(p)` and CPU Cone Reference**
    - *Decision*: Place `coneParams(p)` and the CPU port `deformVertexCone(P, theta, Ay)` in `src/gl/coneMath.ts` with zero WebGL or DOM imports.
-   - *Rationale*: Enables fast deterministic unit testing of `SHD-03`, `SHD-04`, `SHD-07`, and `SHD-10` in Node/Vitest (`OQ-10`) without needing a headless GPU context.
+   - *Rationale*: Enables fast deterministic unit testing of the isometric invariant, flat identity, and domain invariants in Node/Vitest (`OQ-10`) without needing a headless GPU context.
 
-3. **Change-Gated `scrollLeft` Render Loop (`SHD-08`, `SHD-12`, `ARCH-06`, `ARCH-13`)**
+3. **Change-Gated `scrollLeft` Render Loop**
    - *Decision*: Track `lastScrollLeft` and `needsPaintUpload` in the render loop. Only compute uniforms and issue `gl.drawElements` when `book.scrollLeft !== lastScrollLeft` or a `paint` event occurred.
-   - *Rationale*: Satisfies `ARCH-06` (only `scrollLeft` read for animation state) and `ARCH-13` (idles when not scrolling or painting).
+   - *Rationale*: Satisfies the read-only `scrollLeft` constraint and ensures the render loop idles when stationary.
 
 ## Risks / Trade-offs
 
@@ -48,11 +48,11 @@ See `proposal.md` for motivation (`VIS-01`, `VIS-04`, `ARCH-06`, `ARCH-10`). Pha
 
 ## Open Questions
 
-Preserved from `specs/open-questions.md` (must be resolved with human before completing Phase 4 implementation, per `AGENTS.md`):
+Must be resolved with the human before completing Phase 4 implementation (per `AGENTS.md`):
 
-- **`OQ-04` (Back of a turning page: show the next page's content, its mirror, or blank paper?)**: Affects `SHD-06`. Real books show the reverse side (the next page in sequence). Status: **Open**.
-- **`OQ-06` (Lighting: include simple diffuse shading from the deformed normal?)**: Affects `SHD-05`. Greatly improves curl readability at low cost. Proposed: yes, minimal Lambert. Status: **Open**.
-- **`OQ-07` (Paper title and citation confirmation)**: Affects `001` references. User brief cites *"Deforming Pages of 3D Electronic Books"*; known publication is *"Turning Pages of 3D Electronic Books"* (Hong, Card & Chen, IEEE 3DUI 2006). Confirm intended source and formula match. Status: **Open**.
-- **`OQ-08` (`coneParams(p)` curve: how do `theta` and `A_y` evolve over the turn?)**: Affects `SHD-10`. The paper uses piecewise functions over turn time. Proposed starting point: `theta` eases from `pi/2` down to `~0.1-0.3 rad`, and `A_y` moves from slightly below the page to strongly negative; tune visually. Status: **Open**.
-- **`OQ-09` (Add the binding-axis rotation as a third uniform, e.g. `u_rho`?)**: Affects `SHD-11`. The paper composes the cone deformation with a rotation about Y to complete the turn; without it, the page curls up but never lands on the left. Status: **Open**.
-- **`OQ-10` (Testing: allow Vitest as a dev dependency for unit tests of the math?)**: Affects `040` acceptance criteria. The alternative is ad-hoc test scripts. Status: **Open**.
+- **`OQ-04` (Back of a turning page: show the next page's content, its mirror, or blank paper?)**: Real books show the reverse side (the next page in sequence). Status: **Open**.
+- **`OQ-06` (Lighting: include simple diffuse shading from the deformed normal?)**: Greatly improves curl readability at low cost. Proposed: yes, minimal Lambert. Status: **Open**.
+- **`OQ-07` (Paper title and citation confirmation)**: User brief cites *"Deforming Pages of 3D Electronic Books"*; known publication is *"Turning Pages of 3D Electronic Books"* (Hong, Card & Chen, IEEE 3DUI 2006). Confirm intended source and formula match. Status: **Open**.
+- **`OQ-08` (`coneParams(p)` curve: how do `theta` and `A_y` evolve over the turn?)**: The paper uses piecewise functions over turn time. Proposed starting point: `theta` eases from `pi/2` down to `~0.1-0.3 rad`, and `A_y` moves from slightly below the page to strongly negative; tune visually. Status: **Open**.
+- **`OQ-09` (Add the binding-axis rotation as a third uniform, e.g. `u_rho`?)**: The paper composes the cone deformation with a rotation about Y to complete the turn; without it, the page curls up but never lands on the left. Status: **Open**.
+- **`OQ-10` (Testing: allow Vitest as a dev dependency for unit tests of the math?)**: The alternative is ad-hoc test scripts. Status: **Open**.
