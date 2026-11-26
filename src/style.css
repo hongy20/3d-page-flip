@@ -31,32 +31,6 @@
   }
 }
 
-/*
- * Compositor-accelerated `stack` transform/opacity keyframes sharing the named `--page-view`
- * `cover 0%..100%` timeline declared on `.page` (`-1 -> 0 -> 1`):
- *   - Applied to `.page__content` (not `.page`) so `.page` remains untransformed and
- *     `scroll-snap-align: center` snap targets stay fixed at `0, W, 2W, ...`.
- *   - 0%..50% (--progress -1..0): translateX(-100vw -> 0) keeps the underneath page pinned
- *     stationary on the compositor thread without main-thread custom-property lag.
- *   - 50%..100% (--progress 0..1): translateX(0) lets the top page slide out/in natively.
- *   - opacity 0 at 0% (0.01% -> 1) hides pages at --progress = -1 so pages i + 2.. never
- *     peek into letterbox margins around `.page__content`.
- */
-@keyframes stack-page {
-  0% {
-    transform: translateX(-100vw);
-    opacity: 0;
-  }
-  0.01% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 *,
 *::before,
 *::after {
@@ -194,28 +168,19 @@ body {
   container-type: size;
   overflow: hidden;
   --progress-pct: calc(var(--progress) * 100);
-  view-timeline-name: --page-view;
-  view-timeline-axis: inline;
   animation-name: page-progress;
   animation-duration: auto;
   animation-timing-function: linear;
   animation-fill-mode: both;
-  animation-timeline: --page-view;
+  animation-timeline: view(inline);
   animation-range: cover 0% cover 100%;
 }
 
 body:has(input[name='mode'][value='stack']:checked) .page {
-  overflow: visible;
-  z-index: calc(100 + var(--progress-pct));
-}
-
-body:has(input[name='mode'][value='stack']:checked) .page__content {
-  animation-name: stack-page;
-  animation-duration: auto;
-  animation-timing-function: linear;
-  animation-fill-mode: both;
-  animation-timeline: --page-view;
-  animation-range: cover 0% cover 100%;
+  position: sticky;
+  right: 0;
+  z-index: calc(sibling-count() - sibling-index());
+  opacity: clamp(0, calc((var(--progress) + 1) * 10000), 1);
 }
 
 body:has(input[name='debug']:checked) .page__content {
