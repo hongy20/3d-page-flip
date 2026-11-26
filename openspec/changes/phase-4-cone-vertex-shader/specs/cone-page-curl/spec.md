@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Deforms the page mesh in a GLSL ES 3.00 vertex shader using the isometric cone page-curl model of Hong, Card & Chen (2006), driven exclusively by reading `book.scrollLeft` once per active frame and mapping normalized page turn progress `p` to cone parameters.
+Deforms the page mesh in a GLSL ES 3.00 vertex shader using the isometric cone page-curl model of Hong, Card & Chen (2006), driven exclusively by reading CSS `--progress` on active/visible `.page` element(s) via CSSOM once per active frame and mapping normalized page turn progress `p` to cone parameters.
 
 ## ADDED Requirements
 
@@ -41,9 +41,9 @@ JavaScript SHALL map signed turn progress `p in [-1, 1]` to `(u_theta, u_Ay)` (p
 - **WHEN** `coneParams(0)` is evaluated
 - **THEN** it returns `u_theta = pi/2` and a valid `u_Ay < min(P_y)`
 
-### Requirement: Read-only `scrollLeft` bridge and change-gated uniform updates
-Once per animation frame while scrolling, JavaScript SHALL read `book.scrollLeft` (and nothing else as animation state), derive the turning page index `i` and signed progress `p in [-1, 1]` from `scrollLeft / pageWidth` matching the `css-scroll-state` sign convention, and update shader uniforms only when `scrollLeft` changed since the previous frame, maintaining 60 fps during page turns.
+### Requirement: Read-only CSS `--progress` bridge and change-gated uniform updates
+Once per animation frame while scrolling, JavaScript SHALL read CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`, and nothing else as animation state), identify the turning page index `i` and signed progress `p in [-1, 1]` directly from `--progress`, and update shader uniforms only when `--progress` changed since the previous frame, maintaining 60 fps during page turns.
 
-#### Scenario: Uniforms update at 60 fps on scroll change and idle when stationary
-- **WHEN** `book.scrollLeft` changes during user scrolling or native snap settling
-- **THEN** the render loop updates cone uniforms 1:1 with `scrollLeft` at 60 fps and stops issuing uniform updates or draw calls once `scrollLeft` stops changing
+#### Scenario: Uniforms update at 60 fps on `--progress` change and idle when stationary
+- **WHEN** active page `--progress` changes during user scrolling or native snap settling
+- **THEN** the render loop updates cone uniforms 1:1 with `--progress` at 60 fps and stops issuing uniform updates or draw calls once `--progress` stops changing

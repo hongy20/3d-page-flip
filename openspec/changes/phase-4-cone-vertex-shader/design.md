@@ -2,14 +2,14 @@
 
 ## Context
 
-See `proposal.md` for motivation. Phase 4 completes the WebBook 3D pipeline by replacing Phase 3's flat vertex transformation with the Hong, Card & Chen (2006) isometric cone deformation in `src/shaders/cone.vert.glsl` and wiring `book.scrollLeft` to shader uniforms via `coneParams(p)`.
+See `proposal.md` for motivation. Phase 4 completes the WebBook 3D pipeline by replacing Phase 3's flat vertex transformation with the Hong, Card & Chen (2006) isometric cone deformation in `src/shaders/cone.vert.glsl` and wiring CSS `--progress` (read via CSSOM) to shader uniforms via `coneParams(p)`.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Implement the exact Hong, Card & Chen cone math in both a pure TypeScript CPU reference function (for unit testing) and GLSL ES 3.00.
 - Implement `coneParams(p)` in an isolated, unit-tested TypeScript module that guarantees domain invariants and flat identity at `p = 0`.
-- Drive shader uniforms strictly from `book.scrollLeft` on change in the `requestAnimationFrame` loop at a steady 60 fps.
+- Drive shader uniforms strictly from reading CSS `--progress` on active/visible `.page` element(s) via CSSOM on change in the `requestAnimationFrame` loop at a steady 60 fps.
 
 **Non-Goals:**
 - Cylindrical or non-cone curl approximations.
@@ -37,9 +37,9 @@ See `proposal.md` for motivation. Phase 4 completes the WebBook 3D pipeline by r
    - *Decision*: Place `coneParams(p)` and the CPU port `deformVertexCone(P, theta, Ay)` in `src/gl/coneMath.ts` with zero WebGL or DOM imports.
    - *Rationale*: Enables fast deterministic unit testing of the isometric invariant, flat identity, and domain invariants in Node/Vitest (`OQ-10`) without needing a headless GPU context.
 
-3. **Change-Gated `scrollLeft` Render Loop**
-   - *Decision*: Track `lastScrollLeft` and `needsPaintUpload` in the render loop. Only compute uniforms and issue `gl.drawElements` when `book.scrollLeft !== lastScrollLeft` or a `paint` event occurred.
-   - *Rationale*: Satisfies the read-only `scrollLeft` constraint and ensures the render loop idles when stationary.
+3. **Change-Gated CSS `--progress` Render Loop**
+   - *Decision*: Track previous active-page `--progress` values and `needsPaintUpload` in the render loop, reading CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`). Only compute uniforms and issue `gl.drawElements` when `--progress` changed or a `paint` event occurred.
+   - *Rationale*: Satisfies the read-only CSS `--progress` constraint, avoids scanning offscreen pages, and ensures the render loop idles when stationary.
 
 ## Risks / Trade-offs
 
