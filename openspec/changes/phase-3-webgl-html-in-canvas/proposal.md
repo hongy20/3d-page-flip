@@ -2,14 +2,14 @@
 
 ## Why
 
-Traditional 3D page-flip implementations rely on static DOM-to-image rasterization hacks (`html2canvas`, SVG `foreignObject`) that break live interactivity, text selection, and accessibility. Phase 3 introduces a WebGL2 overlay powered by Chrome 157+'s native HTML-in-Canvas API (`<canvas layoutsubtree>` and `texElementImage2D`) to render live, interactive DOM pages onto a densely tessellated 3D plane without obstructing native CSS scroll physics.
+Traditional 3D page-flip implementations rely on static DOM-to-image rasterization hacks (`html2canvas`, SVG `foreignObject`) that break live interactivity, text selection, and accessibility. Phase 3 introduces a raw WebGL2 overlay powered by Chrome 158+'s native HTML-in-Canvas API (`<canvas content="drawable">`, `drawable` descendants, `getElementImageDefaultSize`, `texElementSubImage2D`, and `updateElementGeometry`) to render live, interactive DOM pages onto a densely tessellated 3D plane without obstructing native CSS scroll physics.
 
 ## What Changes
 
-- Add a viewport-fixed `<canvas layoutsubtree>` with a WebGL2 context, DPR-aware sizing capped and driven by `ResizeObserver`, and upfront feature detection for `layoutsubtree` and `texElementImage2D` with a clear in-page message when missing.
-- Integrate the canvas with the `.book` scroller so native scrolling and snapping from `book-scroller` remain unobstructed (`OQ-03`).
-- Upload live page DOM elements to GPU textures exclusively via `gl.texElementImage2D(...)` inside the canvas `paint` event handler—re-uploading only when page content repaints, never per-frame.
-- Generate a densely tessellated plane geometry (default 64x64 segments) in the XY-plane with the binding along the Y-axis at `x = 0` and page extending to `+x`, matching the page aspect ratio and camera projection so a flat snapped page aligns pixel-for-pixel (`+-1 px`) with its DOM layout.
+- Add a viewport-fixed `<canvas content="drawable">` with a raw WebGL2 context (`OQ-01`), DPR-aware sizing capped at `2` and driven by `ResizeObserver`, and upfront feature detection for `content="drawable"`, `texElementSubImage2D`, `getElementImageDefaultSize`, and `updateElementGeometry` with a clear in-page message when missing.
+- Wrap `<main class="book" drawable>` directly inside `<canvas content="drawable">` as a single DOM (`OQ-03` Option a) and synchronize hit-testing and scroll routing via `canvas.updateElementGeometry(el, { canvasTransform })` so native scrolling, snapping, and CSS `view(inline)` `--progress` from `book-scroller` and `css-scroll-state` remain unobstructed.
+- Mark each `<article class="page__content" drawable>` and maintain one WebGL2 texture per page (`OQ-05`), pre-allocated to `canvas.getElementImageDefaultSize(el)` and uploaded exclusively via `gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, el)` inside the canvas `paint` (`CanvasPaintEvent`) handler—re-uploading only when page content repaints (`event.changedElements`), on initial paint, or on resize, never per-frame.
+- Generate a densely tessellated plane geometry (default `64x64` segments) in the XY-plane with the binding along the Y-axis at `x = 0` and page extending to `+x`, matching the page aspect ratio and camera projection so a flat snapped page aligns pixel-for-pixel (`+-1 px`) with its DOM layout.
 
 ### Out of Scope
 
@@ -19,13 +19,13 @@ Traditional 3D page-flip implementations rely on static DOM-to-image rasterizati
 ## Capabilities
 
 ### New Capabilities
-- `webgl-html-in-canvas`: WebGL2 overlay using `<canvas layoutsubtree>` and event-driven `texElementImage2D` uploads to render live HTML page elements onto a pixel-aligned, densely tessellated plane.
+- `webgl-html-in-canvas`: Raw WebGL2 overlay using `<canvas content="drawable">` and event-driven `texElementSubImage2D` uploads to render live HTML page elements onto a pixel-aligned, densely tessellated plane.
 
 ### Modified Capabilities
 <!-- None -->
 
 ## Impact
 
-- **Files created/affected**: `index.html`, `src/style.css`, `src/main.ts`, `src/gl/` (context, feature detection, resize observer, plane geometry, texture upload manager, render loop), `src/shaders/page.frag.glsl` (and pass-through/flat vertex shader prior to Phase 4).
-- **Dependencies**: None beyond the renderer decided in `OQ-01` (raw WebGL2 recommended).
-- **Open Questions**: `OQ-01` (Raw WebGL2 vs Three.js), `OQ-03` (DOM structure of scroller relative to `<canvas layoutsubtree>`), and `OQ-05` (per-page textures vs 2-3 texture pool).
+- **Files created/affected**: `index.html`, `src/style.css`, `src/main.ts`, `src/gl/` (context, feature detection, resize observer, geometry sync, plane geometry, texture upload manager, render loop), `src/shaders/page.frag.glsl` (and flat vertex shader prior to Phase 4).
+- **Dependencies**: None (`OQ-01` resolved: Raw WebGL2).
+- **Open Questions**: All resolved (`OQ-01`: Raw WebGL2; `OQ-03`: Option a, single DOM inside `<canvas content="drawable">`; `OQ-05`: one WebGL texture per page).
