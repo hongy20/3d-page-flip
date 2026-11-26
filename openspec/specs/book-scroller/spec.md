@@ -21,7 +21,7 @@ The project SHALL be initialized with Vite (`vanilla-ts`), configured with `stri
 - **THEN** `.book` contains 18 `.page` elements rendering `page_1.svg` through `page_18.svg` and interactive `:hover` styling
 
 ### Requirement: Native horizontal flex scroll-snap container
-`.book` SHALL be styled as `display: flex`, `overflow-x: auto`, `overflow-y: hidden`, `scroll-snap-type: x mandatory`, fill the viewport (`100dvh`), hide its scrollbar, and set `overscroll-behavior-x: contain`. Each `.page` SHALL be `flex: 0 0 100%` of the scroller width with `scroll-snap-align: center` and `scroll-snap-stop: always`, centering its `.page__content` with reasonable surrounding padding.
+`.book` SHALL be styled as `display: flex`, `overflow-x: auto`, `overflow-y: hidden`, `scroll-snap-type: x mandatory`, fill the viewport (`100dvh`), hide its scrollbar, and set `overscroll-behavior-x: none` (suppressing both browser back/forward history gestures and edge elastic bounce-back). Each `.page` SHALL be `flex: 0 0 100%` of the scroller width with `scroll-snap-align: center` and `scroll-snap-stop: always`, centering its `.page__content` with reasonable surrounding padding.
 
 #### Scenario: Single-page snap navigation across input modalities
 - **WHEN** the user navigates horizontally via trackpad swipe, touch drag, `Shift+wheel`, or keyboard arrow keys
