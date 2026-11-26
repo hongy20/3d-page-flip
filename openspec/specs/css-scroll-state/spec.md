@@ -37,15 +37,15 @@ Each `.page` SHALL run a linear keyframe animation from `--progress: -1` to `--p
 - **THEN** the `view(inline)` timeline is inactive and `--progress` resolves cleanly to `0`
 
 ### Requirement: Extensible pure-CSS transition modes (`slide` and `stack`) with JS-free switching
-The reader SHALL support pure-CSS transition modes switched solely via native `<input type="radio" name="mode">` controls and CSS `:has()` without JavaScript: `slide` (default horizontal slide) and `stack` (smaller page numbers stacked above larger ones, with the top page sliding out/in from the left over a stationary underneath page). Additional modes SHALL be addable without modifying scroll logic.
+The reader SHALL support pure-CSS transition modes switched solely via native `<input type="radio" name="mode">` controls and CSS `:has()` without JavaScript: `slide` (default horizontal slide) and `stack` (smaller page numbers stacked above larger ones, with the top page sliding out/in from the left while the horizontally centered underneath page rises forward from behind on forward swipes and recedes back behind on backward swipes along the z-axis). Additional modes SHALL be addable without modifying scroll logic.
 
 #### Scenario: Forward swipe in `stack` mode
 - **WHEN** `stack` mode is selected and the user swipes forward from page `i` to page `i + 1`
-- **THEN** page `i` renders on top of page `i + 1` and slides out to the left while page `i + 1` stays stationary underneath until settled
+- **THEN** page `i` renders on top of page `i + 1` and slides out to the left while page `i + 1` stays horizontally centered underneath and rises forward along the z-axis from behind until settled
 
 #### Scenario: Backward swipe in `stack` mode
 - **WHEN** `stack` mode is selected and the user swipes backward from page `i + 1` to page `i`
-- **THEN** page `i` renders on top of page `i + 1` and slides in from the left over page `i + 1`, which stays stationary underneath
+- **THEN** page `i` renders on top of page `i + 1` and slides in from the left over page `i + 1`, which stays horizontally centered and recedes back along the z-axis behind page `i`
 
 #### Scenario: Mode switching between `slide` and `stack` uses zero JS
 - **WHEN** the user activates the `slide` or `stack` radio control

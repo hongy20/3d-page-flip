@@ -34,11 +34,11 @@
 @keyframes stack-pin {
   0%,
   48% {
-    transform: translateX(-100vw);
+    transform: translateX(-100vw) perspective(1200px) translateZ(-120px);
   }
   50%,
   100% {
-    transform: translateX(0);
+    transform: translateX(0) perspective(1200px) translateZ(0);
   }
 }
 
@@ -47,7 +47,10 @@
   48% {
     opacity: 0;
   }
-  48.001%,
+  48.001% {
+    opacity: 0.55;
+  }
+  50%,
   100% {
     opacity: 1;
   }
