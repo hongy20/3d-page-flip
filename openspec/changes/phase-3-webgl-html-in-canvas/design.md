@@ -13,7 +13,7 @@ See `proposal.md` for motivation. Phase 3 introduces the GPU rendering layer: a 
 - Preserve 100% of native CSS scrolling and accessibility.
 
 **Non-Goals:**
-- Cone vertex deformation or `scrollLeft` uniform updates (deferred to Phase 4).
+- Cone vertex deformation or CSS `--progress` uniform updates (deferred to Phase 4).
 - Polyfills or fallback renderers for browsers without HTML-in-Canvas.
 
 ## Decisions
@@ -31,7 +31,7 @@ See `proposal.md` for motivation. Phase 3 introduces the GPU rendering layer: a 
    - *Rationale*: Placing the binding on the Y-axis at `x = 0` is required by the Hong, Card & Chen cone equations in Phase 4 (`cone-page-curl`), while still allowing a 3D perspective projection when vertices lift into `+z` during a curl.
 
 4. **Idle-By-Default Render Loop**
-   - *Decision*: Schedule a `requestAnimationFrame` draw only when a `paint` event uploads a texture (or, in Phase 4, when `scrollLeft` changes).
+   - *Decision*: Schedule a `requestAnimationFrame` draw only when a `paint` event uploads a texture (or, in Phase 4, when CSS `--progress` changes).
    - *Rationale*: Eliminates idle GPU usage when the reader is stationary on a page.
 
 ## Risks / Trade-offs

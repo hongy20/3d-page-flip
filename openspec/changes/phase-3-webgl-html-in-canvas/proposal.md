@@ -13,7 +13,7 @@ Traditional 3D page-flip implementations rely on static DOM-to-image rasterizati
 
 ### Out of Scope
 
-- Cone vertex shader deformation, `scrollLeft` to uniform mapping, and lighting (Phase 4).
+- Cone vertex shader deformation, CSS `--progress` to uniform mapping, and lighting (Phase 4).
 - Non-WebGL fallback renderers or polyfills for browsers lacking HTML-in-Canvas.
 
 ## Capabilities

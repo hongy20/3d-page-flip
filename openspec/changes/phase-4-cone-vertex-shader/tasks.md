@@ -10,7 +10,7 @@
 - [ ] 2.1 Implement the Hong, Card & Chen cone deformation equations, undeformed UV pass-through, optional binding-axis rotation (`OQ-09`), and deformed surface normal calculation (`OQ-06`) in GLSL ES 3.00 (`src/shaders/cone.vert.glsl`), and verify shader compilation succeeds with zero warnings
 - [ ] 2.2 Configure back-face rendering and optional diffuse shading in `src/shaders/page.frag.glsl` and the WebGL state (`OQ-04`, `OQ-06`), and verify both front and back faces render without flicker, holes, or `NaN`/`Inf` artifacts across the full curl range
 
-## 3. Read-Only `scrollLeft` Uniform Bridge & Performance Verification
+## 3. Read-Only `--progress` Uniform Bridge & Performance Verification
 
-- [ ] 3.1 Implement the `requestAnimationFrame` uniform bridge in `src/gl/` that reads `book.scrollLeft` once per active frame, derives page index `i` and signed progress `p in [-1, 1]` matching `css-scroll-state`, updates `u_theta` and `u_Ay` via `coneParams(p)` only when `scrollLeft` changed, and idles when stationary
+- [ ] 3.1 Implement the `requestAnimationFrame` uniform bridge in `src/gl/` that reads CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`) once per active frame, identifies page index `i` and signed progress `p in [-1, 1]`, updates `u_theta` and `u_Ay` via `coneParams(p)` only when `--progress` changed, and idles when stationary
 - [ ] 3.2 Verify in Chrome 157+ that slow and fast scrolling curls the page smoothly 1:1 with finger/trackpad input and native snap completion at 60 fps (Chrome Performance panel), all unit tests and `npm run build` pass, and zero navigation listeners, animation libraries, or JS DOM movement exist in `src/`
