@@ -6,6 +6,24 @@
     <title>WebBook 3D</title>
   </head>
   <body>
+    <fieldset class="controls" aria-label="Reader controls">
+      <legend class="sr-only">Reader controls</legend>
+      <div class="controls__group" role="radiogroup" aria-label="Transition mode">
+        <label class="controls__option">
+          <input type="radio" name="mode" value="slide" checked />
+          <span>Slide</span>
+        </label>
+        <label class="controls__option">
+          <input type="radio" name="mode" value="stack" />
+          <span>Stack</span>
+        </label>
+      </div>
+      <span class="controls__divider" aria-hidden="true"></span>
+      <label class="controls__option controls__option--toggle">
+        <input type="checkbox" name="debug" />
+        <span>Debug</span>
+      </label>
+    </fieldset>
     <main class="book" aria-label="WebBook 3D Reader">
       <section class="page" aria-label="Page 1">
         <article class="page__content">

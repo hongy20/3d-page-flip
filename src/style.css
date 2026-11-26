@@ -1,3 +1,36 @@
+@property --progress {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --progress-pct {
+  syntax: '<integer>';
+  inherits: true;
+  initial-value: 0;
+}
+
+/*
+ * Scroll-driven `--progress` sign convention (view(inline), cover 0% -> cover 100%):
+ *  -1 : page is one full page-width to the right of its snapped position (clamped further right)
+ *   0 : page is center-snapped in the viewport
+ *  +1 : page is one full page-width to the left of its snapped position (clamped further left)
+ *
+ * Boundary & single-page cases:
+ *  - First page (multi-page): starts centered at scrollLeft = 0 -> [0, 1] (never -1).
+ *  - Last page (multi-page): enters from -1 and stops centered at max scroll -> [-1, 0] (never 1).
+ *  - Single-page book (N = 1): zero scrollable overflow makes view(inline) inactive,
+ *    so `--progress` resolves cleanly to `@property`'s `initial-value: 0`.
+ */
+@keyframes page-progress {
+  from {
+    --progress: -1;
+  }
+  to {
+    --progress: 1;
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -16,7 +49,96 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.controls {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 4px;
+  border: 1px solid rgba(253, 251, 247, 0.14);
+  border-radius: 999px;
+  background: rgba(26, 25, 23, 0.82);
+  color: #f6f3ec;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+
+.controls__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.controls__divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(253, 251, 247, 0.16);
+}
+
+.controls__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font: 600 12px/1 system-ui, -apple-system, sans-serif;
+  letter-spacing: 0.02em;
+  color: rgba(246, 243, 236, 0.78);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.controls__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.controls__option:hover {
+  color: #ffffff;
+}
+
+.controls__option:has(:checked) {
+  background: #fdfbf7;
+  color: #1a1917;
+}
+
+.controls__option--toggle:has(:checked) {
+  background: #c84b31;
+  color: #ffffff;
+}
+
+.controls__option:has(:focus-visible) {
+  outline: 2px solid #fdfbf7;
+  outline-offset: 2px;
+}
+
 .book {
+  isolation: isolate;
   display: flex;
   width: 100%;
   height: 100dvh;
@@ -33,6 +155,7 @@ body {
 }
 
 .page {
+  position: relative;
   flex: 0 0 100%;
   width: 100%;
   height: 100%;
@@ -44,6 +167,40 @@ body {
   padding: clamp(12px, 3vmin, 32px);
   container-type: size;
   overflow: hidden;
+  --progress-pct: calc(var(--progress) * 100);
+  animation-name: page-progress;
+  animation-duration: auto;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-timeline: view(inline);
+  animation-range: cover 0% cover 100%;
+}
+
+body:has(input[name='mode'][value='stack']:checked) .page {
+  position: sticky;
+  right: 0;
+  z-index: calc(sibling-count() - sibling-index());
+  opacity: clamp(0, calc((var(--progress) + 1) * 10000), 1);
+}
+
+body:has(input[name='debug']:checked) .page__content {
+  counter-reset: progress var(--progress-pct);
+}
+
+body:has(input[name='debug']:checked) .page__content::after {
+  content: '--progress: ' counter(progress) '%';
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(20, 19, 17, 0.86);
+  color: #f6f3ec;
+  font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 .page__content {
