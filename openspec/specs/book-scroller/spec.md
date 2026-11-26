@@ -35,8 +35,8 @@ Each `.page__content` element SHALL preserve its aspect ratio and paper-like vis
 - **THEN** `.page__content` maintains its aspect ratio, stays fully contained within the padded `.page` bounds, and triggers zero inner or vertical scrollbars
 
 ### Requirement: Zero-JS navigation physics and no DOM movement
-All dragging, touch tracking, momentum, and snapping SHALL come exclusively from native CSS scrolling. The codebase SHALL NOT include JS animation or physics libraries, SHALL NOT register `touchstart`, `touchmove`, `touchend`, `pointer*`, `mouse*`, or `wheel` event listeners for navigation, and SHALL NOT mutate DOM element positions or scroll offsets (`style.transform`, `left`, `scrollLeft`, `scrollTo()`). In Phase 1, `src/main.ts` SHALL only import the stylesheet.
+All dragging, touch tracking, momentum, and snapping SHALL come exclusively from native CSS scrolling. The codebase SHALL NOT include JS animation or physics libraries, SHALL NOT register `touchstart`, `touchmove`, `touchend`, `pointer*`, `mouse*`, or `wheel` event listeners for navigation, and SHALL NOT mutate DOM element positions or scroll offsets (`style.transform`, `left`, `scrollLeft`, `scrollTo()`).
 
 #### Scenario: Static inspection confirms zero navigation listeners or DOM movement
-- **WHEN** `src/` is searched for `addEventListener` or `on(touch|wheel|pointer|mouse)` handlers
-- **THEN** zero matches are found and `src/main.ts` contains only the stylesheet import
+- **WHEN** `src/` is searched for navigation event listeners (`touch*`, `pointer*`, `mouse*`, `wheel`) or DOM position/scroll mutations (`style.transform`, `scrollLeft`, `scrollTo`)
+- **THEN** zero matches are found

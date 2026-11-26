@@ -32,7 +32,7 @@ Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed phases and
   never move DOM elements with JS. Navigation = `scroll-snap-type` only.
 - **JS reads CSS `--progress`, nothing else, for animation state.** CSS Scroll-Driven Animations (`view(inline)`) are the single source of truth for per-page `--progress`. JS reads `--progress` (e.g. via `computedStyleMap()` / `getComputedStyle()`) solely to convert it into shader uniforms. It never writes scroll position or styles to animate.
 - **No DOM-to-image polyfills.** Never use `html2canvas`, `dom-to-image`, or SVG
-  `foreignObject` rasterisation. Use `<canvas layoutsubtree>` + `texElementImage2D`.
+  `foreignObject` rasterisation. Use `<canvas content="drawable">` + `texElementSubImage2D`.
 - **Cone model math is fixed.** The vertex shader implements exactly the formulas
   in `openspec/changes/phase-4-cone-vertex-shader/`. Do not substitute cylinder or other curl models.
 
