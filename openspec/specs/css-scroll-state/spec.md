@@ -58,9 +58,9 @@ A debug view toggled by a JS-free `<input type="checkbox" name="debug">` control
 - **WHEN** the debug checkbox is checked and the user scrolls across pages
 - **THEN** each page renders its current `--progress` value on screen updating in real time without JavaScript listeners
 
-### Requirement: Zero JavaScript in Phase 2
-Phase 2 SHALL NOT add any JavaScript for computing `--progress`, driving transitions, switching modes, toggling debug output, or handling scroll/input events (`src/main.ts` remains stylesheet-import-only in Phase 2; reading `--progress` via CSSOM for WebGL uniforms is deferred to Phase 4).
+### Requirement: Zero JavaScript for CSS scroll state and controls
+The CSS scroll state engine SHALL NOT use JavaScript to compute or mutate `--progress`, drive pure-CSS transitions, switch transition modes, toggle debug output, or handle scroll/input/control events.
 
-#### Scenario: Zero JavaScript interaction in Phase 2
-- **WHEN** `src/` is inspected after Phase 2 implementation
-- **THEN** no JavaScript reads `getComputedStyle`/`computedStyleMap` for `--progress`, sets `--progress`, mutates styles, or registers scroll/input/control event listeners
+#### Scenario: Zero JavaScript handles scroll state or controls
+- **WHEN** `src/` is inspected for CSS scroll state, mode switching, or debug readout behavior
+- **THEN** no JavaScript sets `--progress`, mutates transition styles, or registers scroll, input, or control event listeners
