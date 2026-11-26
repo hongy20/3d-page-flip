@@ -14,10 +14,15 @@ Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed phases and
 
 1. **Specs are the source of truth.** All behaviour is defined in `openspec/` (`openspec/specs/` and `openspec/changes/`). Code that
    isn't traceable to an OpenSpec capability requirement should not exist.
-2. **No implementation without an approved spec.** Only implement an OpenSpec change after
-   the human has reviewed and approved it.
+2. **Pure bug fixes vs. behaviour changes.**
+   - **Pure bug fixes** that restore already-specified behaviour in `openspec/specs/` may fix code directly without a spec change.
+   - **Any behaviour or requirement change** must follow the full OpenSpec lifecycle below (`propose` → review/approval → `apply` → `sync`/`archive`):
+     1. **Propose (`openspec propose` / `openspec new change "<name>"`)**: Create `proposal.md`, delta specs under `openspec/changes/<name>/specs/<capability>/spec.md`, `design.md` (when technical tradeoffs or architecture matter), and `tasks.md`. Planning only — **zero code edits** and **never edit `openspec/specs/` directly**.
+     2. **Review & approval**: Stop after creating the change artifacts and wait for the human to review and approve before editing project code.
+     3. **Apply (`openspec apply`)**: Implement `tasks.md` and verify all acceptance criteria.
+     4. **Sync & archive (`openspec archive`, or `openspec sync` to merge early)**: Merge delta specs into `openspec/specs/`, validate with `openspec validate --specs`, and move the change into `openspec/changes/archive/YYYY-MM-DD-<name>/`.
 3. **Change the spec first.** If implementation reveals the spec is wrong or incomplete,
-   stop, propose a spec change under `openspec/`, and get it approved before changing code.
+   stop, propose a spec change under `openspec/changes/`, and get it approved before changing code.
 4. **Open questions block.** Any open questions (`OQ-*`) noted in the OpenSpec changes
    must not be decided silently by an agent. Ask the human.
 5. **One phase at a time.** Phases are sequential (`phase-1-scaffolding` → `phase-2-css-state-engine` → `phase-3-webgl-html-in-canvas` → `phase-4-cone-vertex-shader`). Finish and
