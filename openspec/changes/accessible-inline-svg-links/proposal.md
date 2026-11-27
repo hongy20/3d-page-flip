@@ -13,9 +13,11 @@ Rendering pages via `<img src="/pages/page_N.svg">` hides all SVG text and links
 ## Capabilities
 
 ### New Capabilities
+
 <!-- None -->
 
 ### Modified Capabilities
+
 - `book-scroller`: Render page artwork as inline `<svg>` DOM elements exposed to screen readers and wrap valid SVG URLs in native SVG `<a>` hyperlinks.
 - `webgl-html-in-canvas`: Preserve inline SVG `<a>` link clickability through HTML-in-Canvas hit-test geometry sync.
 

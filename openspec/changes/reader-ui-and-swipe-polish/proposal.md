@@ -13,9 +13,11 @@ Center the page number indicator along the bottom edge for cleaner visual balanc
 ## Capabilities
 
 ### New Capabilities
+
 <!-- None -->
 
 ### Modified Capabilities
+
 - `book-scroller`: Add bottom-centered page badge positioning and replace `scroll-snap-stop: always` with `scroll-snap-stop: normal` to allow momentum multi-page swiping.
 
 ## Impact

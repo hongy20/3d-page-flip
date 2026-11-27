@@ -1,4 +1,4 @@
-import type { DrawableCanvasElement, HtmlInCanvasWebGL2Context } from './types';
+import type { DrawableCanvasElement, HtmlInCanvasWebGL2Context } from "./types";
 
 interface PageTextureEntry {
   texture: WebGLTexture;
@@ -26,7 +26,7 @@ export function createPageTextureManager(
   function createConfiguredTexture(): WebGLTexture {
     const texture = gl.createTexture();
     if (!texture) {
-      throw new Error('Failed to allocate WebGL2 page texture');
+      throw new Error("Failed to allocate WebGL2 page texture");
     }
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);

@@ -1,4 +1,4 @@
-import type { DrawableCanvasElement } from './types';
+import type { DrawableCanvasElement } from "./types";
 
 type AffineTuple = readonly [number, number, number, number, number, number];
 

@@ -8,7 +8,7 @@ Instructions for any AI coding agent working in this repository.
 all page-navigation physics; a WebGL overlay renders the live HTML pages (via
 Chrome's HTML-in-Canvas API) deformed by the cone page-curl model of Hong, Card & Chen.
 
-Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed phases and `openspec/specs/` for synced specs).
+Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed changes and `openspec/specs/` for synced specs).
 
 ## Workflow: spec-driven (OpenSpec)
 
@@ -25,8 +25,7 @@ Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed phases and
    stop, propose a spec change under `openspec/changes/`, and get it approved before changing code.
 4. **Open questions block.** Any open questions (`OQ-*`) noted in the OpenSpec changes
    must not be decided silently by an agent. Ask the human.
-5. **One phase at a time.** Phases are sequential (`phase-1-scaffolding` → `phase-2-css-state-engine` → `phase-3-webgl-html-in-canvas` → `phase-4-cone-vertex-shader`). Finish and
-   verify a phase's acceptance criteria before starting the next.
+5. **One change at a time.** Finish and verify a change's acceptance criteria before starting the next.
 6. **Verify, don't assert.** A task is done only when its acceptance criteria are
    demonstrated (command output, test result, or a described manual check in Chrome).
 
@@ -39,7 +38,7 @@ Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed phases and
 - **No DOM-to-image polyfills.** Never use `html2canvas`, `dom-to-image`, or SVG
   `foreignObject` rasterisation. Use `<canvas content="drawable">` + `texElementSubImage2D`.
 - **Cone model math is fixed.** The vertex shader implements exactly the formulas
-  in `openspec/changes/phase-4-cone-vertex-shader/`. Do not substitute cylinder or other curl models.
+  in `openspec/specs/cone-page-curl/spec.md`. Do not substitute cylinder or other curl models.
 
 ## Conventions
 

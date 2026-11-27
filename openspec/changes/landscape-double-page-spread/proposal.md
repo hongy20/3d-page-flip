@@ -13,9 +13,11 @@ On landscape viewports (landscape phones, tablets, and desktop screens), readers
 ## Capabilities
 
 ### New Capabilities
+
 <!-- None -->
 
 ### Modified Capabilities
+
 - `book-scroller`: Add `@media (orientation: landscape)` physical magazine spread layout while preserving single-page portrait layout.
 - `css-scroll-state`: Expose spread-level `--progress` via `view(inline)` in landscape mode while keeping per-page `--progress` in portrait.
 - `cone-page-curl`: Render paired next/previous page textures (horizontally mirrored on the back face) when curling a leaf in landscape spread mode.

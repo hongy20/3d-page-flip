@@ -7,10 +7,12 @@ See [proposal.md](proposal.md). Currently `src/shaders/cone.vert.glsl` and `src/
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Respond naturally to where the user grabs the page vertically (`top`, `middle`, `bottom`) while keeping native CSS scroll-snap as the sole physics and `--progress` engine.
 - Preserve exact isometry, flat identity at `p = 0`, and smooth normal lighting across all three curl modes.
 
 **Non-Goals:**
+
 - Driving scroll position, velocity, or snap timing from pointer events.
 - Altering `slide` or `stack` transition modes.
 

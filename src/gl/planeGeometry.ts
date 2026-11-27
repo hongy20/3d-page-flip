@@ -59,7 +59,7 @@ export function createPlaneMesh(
   const vbo = gl.createBuffer();
   const ibo = gl.createBuffer();
   if (!vao || !vbo || !ibo) {
-    throw new Error('Failed to allocate WebGL2 plane buffers');
+    throw new Error("Failed to allocate WebGL2 plane buffers");
   }
 
   gl.bindVertexArray(vao);

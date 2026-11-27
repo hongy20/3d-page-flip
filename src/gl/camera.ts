@@ -74,8 +74,7 @@ export function multiplyMat4(
     const b2 = b[col * 4 + 2];
     const b3 = b[col * 4 + 3];
     for (let row = 0; row < 4; row += 1) {
-      out[col * 4 + row] =
-        a[row] * b0 + a[4 + row] * b1 + a[8 + row] * b2 + a[12 + row] * b3;
+      out[col * 4 + row] = a[row] * b0 + a[4 + row] * b1 + a[8 + row] * b2 + a[12 + row] * b3;
     }
   }
   return out;

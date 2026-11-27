@@ -13,9 +13,11 @@ Currently `curl` mode always lifts the bottom-right corner using a single lower-
 ## Capabilities
 
 ### New Capabilities
+
 <!-- None -->
 
 ### Modified Capabilities
+
 - `cone-page-curl`: Add swipe-zone directional curl (`top` Y-reflected cone, `middle` isometric cylinder, `bottom` cone) and isometric/identity verification for the new deformation paths.
 
 ## Impact

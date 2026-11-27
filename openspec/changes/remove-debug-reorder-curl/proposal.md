@@ -2,7 +2,7 @@
 
 ## Why
 
-Remove the Phase 2 `Debug` `--progress` overlay toggle from `.controls` to simplify the reader toolbar, and order transition modes progressively from flat CSS (`Slide`, `Stack`) to 3D WebGL (`Curl`) with `Slide` as the initial default.
+Remove the initial `Debug` `--progress` overlay toggle from `.controls` to simplify the reader toolbar, and order transition modes progressively from flat CSS (`Slide`, `Stack`) to 3D WebGL (`Curl`) with `Slide` as the initial default.
 
 ## What Changes
 
@@ -14,9 +14,11 @@ Remove the Phase 2 `Debug` `--progress` overlay toggle from `.controls` to simpl
 ## Capabilities
 
 ### New Capabilities
+
 <!-- None -->
 
 ### Modified Capabilities
+
 - `css-scroll-state`: Remove the pure-CSS debug readout requirement; update the transition modes requirement to specify `Slide`, `Stack`, `Curl` order with `slide` checked by default; remove debug references from the zero-JS requirement.
 
 ## Impact
