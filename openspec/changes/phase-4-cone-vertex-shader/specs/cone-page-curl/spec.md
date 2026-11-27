@@ -2,47 +2,65 @@
 
 ## Purpose
 
-Deforms the page mesh in a GLSL ES 3.00 vertex shader using the isometric cone page-curl model of Hong, Card & Chen (2006), driven exclusively by reading CSS `--progress` on active/visible `.page` element(s) via CSSOM once per active frame and mapping normalized page turn progress `p` to cone parameters.
+Deforms the page mesh in a GLSL ES 3.00 vertex shader using the isometric cone page-curl and binding-axis rotation model of Hong, Card & Chen (2004), driven exclusively by reading CSS `--progress` on active/visible `.page` element(s) via CSSOM once per active frame.
 
 ## ADDED Requirements
 
-### Requirement: Hong, Card & Chen cone vertex shader deformation and UV pass-through
-The vertex shader (`src/shaders/cone.vert.glsl`) SHALL implement the exact Hong, Card & Chen cone deformation equations in GLSL ES 3.00 (`R`, `alpha`, `beta`, `r`, and deformed `(T_x, T_y, T_z)`) driven by `u_theta` and `u_Ay` with no substitute curl model, and SHALL pass undeformed UV coordinates to the fragment shader.
+### Requirement: Hong, Card & Chen cone deformation, binding-axis rotation, and UV pass-through
+The vertex shader SHALL implement the Hong, Card & Chen cone deformation equations (`R`, `alpha`, `beta`, `r`, `(T_x, T_y, T_z)` with cancellation-safe `R + A_y`) composed with binding-axis Y-rotation `u_rho` in GLSL ES 3.00, and SHALL pass undeformed UV coordinates to the fragment shader.
 
-#### Scenario: Vertex shader deforms page mesh smoothly without UV sliding
-- **WHEN** `u_theta` decreases from `pi/2` toward `theta_min` during a page scroll
-- **THEN** the page mesh curls smoothly in 3D space around the cone while its live HTML texture remains anchored to the paper surface
+#### Scenario: Vertex shader curls and turns page smoothly without UV sliding
+- **WHEN** `u_theta`, `u_Ay`, and `u_rho` advance across a page turn
+- **THEN** the page mesh curls around the cone and rotates across the Y-axis binding while its live HTML texture remains anchored to the paper surface
 
-### Requirement: Cone domain invariants for `u_Ay` and `u_theta`
-The JavaScript uniform bridge SHALL enforce that `u_Ay` is strictly less than the minimum page `y` (keeping the cone apex below the page so `R > 0` and `P_y - A_y > 0`) and SHALL clamp `u_theta` to `(theta_min, pi/2]` with `theta_min > 0` (so `sin(theta) > 0`), without branching in GLSL.
+### Requirement: Cone domain invariants for `u_Ay`, `u_theta`, and `u_rho`
+The uniform parameter mapping SHALL enforce `u_Ay < min(P_y)`, clamp `u_theta` to `(theta_min, pi/2]` with `theta_min > 0`, and bound `u_rho` to `[0, pi]` so the vertex equations produce zero `NaN` or `Inf` coordinates without GLSL branching.
 
 #### Scenario: Domain invariants hold across full scroll range with zero NaN/Inf vertices
-- **WHEN** `coneParams(p)` is evaluated across the full scroll progress range `p in [-1, 1]`
-- **THEN** `u_Ay < min(P_y)` and `u_theta in (theta_min, pi/2]` hold for every input and the vertex math produces zero `NaN` or `Inf` coordinates
+- **WHEN** `coneParams(p)` is evaluated across `p in [-1, 1]`
+- **THEN** `u_Ay < min(P_y)`, `u_theta in (theta_min, pi/2]`, and `u_rho in [0, pi]` hold for every input and all deformed vertices are finite
 
-### Requirement: Isometric no-stretching invariant and flat identity at `theta = pi/2`
-For any valid `(u_theta, u_Ay)`, the cone deformation SHALL preserve the distance from the cone apex `A = (0, A_y, 0)` for every vertex (`|T - A| = R`) and at `u_theta = pi/2` the deformed vertex `T` SHALL equal the undeformed flat vertex `P = (P_x, P_y, 0)` within floating-point tolerance.
+### Requirement: Isometric no-stretching invariant and flat identity
+For any valid `(u_theta, u_Ay, u_rho)`, the deformation SHALL preserve distance to the cone apex `A = (0, A_y, 0)` for every vertex (`|V - A| = R`) and at `(u_theta = pi/2, u_rho = 0)` SHALL equal the flat vertex `P = (P_x, P_y, 0)` within floating-point tolerance.
 
 #### Scenario: CPU reference port passes isometric and identity unit tests
-- **WHEN** the unit test suite runs the CPU reference port of the cone equations over a vertex grid across a sweep of valid `(theta, A_y)` pairs
-- **THEN** `|T - A| == R` holds for all vertices and `T == P` holds at `theta = pi/2` within float tolerance
+- **WHEN** the unit test suite evaluates the CPU reference port over a vertex grid across a sweep of valid `(theta, A_y, rho)` triples
+- **THEN** `|V - A| == R` holds for all vertices and `V == P` holds at `(theta = pi/2, rho = 0)` within floating-point tolerance
 
-### Requirement: Deformed normal shading and back-face rendering
-The shader pipeline SHALL compute a deformed surface normal (analytic or finite-difference) when lighting is enabled (`OQ-06`), and SHALL render back faces (the reverse side of the curling page) using either the next page's texture or a paper color (`OQ-04`).
+### Requirement: Deformed normal Lambert shading with configurable light position
+The shader pipeline SHALL compute a deformed surface normal in vertex space and apply ambient plus Lambert diffuse shading driven by a code-configurable `u_lightPos` uniform without requiring UI lighting controls.
 
-#### Scenario: Reverse side of curling page renders cleanly without disappearing
-- **WHEN** a page curls far enough that its back face becomes visible to the camera
-- **THEN** the back face is rendered with the configured reverse-side appearance and optional diffuse shading rather than being culled or invisible
+#### Scenario: Curled surface exhibits shading gradient responsive to `u_lightPos`
+- **WHEN** a page curls out of the `z = 0` plane or `u_lightPos` is configured to a new 3D position
+- **THEN** the fragment shader shades vertices according to their deformed surface normals relative to `u_lightPos`
 
-### Requirement: Pure `coneParams(p)` parameter mapping
-JavaScript SHALL map signed turn progress `p in [-1, 1]` to `(u_theta, u_Ay)` (plus optional binding-axis Y-rotation uniform per `OQ-09`) using a pure, unit-tested function `coneParams(p)` (`OQ-08`) that returns `u_theta = pi/2` (flat page) at `p = 0`.
+### Requirement: Blank-paper back-face rendering in single-page curl mode
+The WebGL pipeline SHALL disable back-face culling and render front faces with the live HTML page texture and back faces with a warm blank-paper tone shaded using the flipped deformed normal.
 
-#### Scenario: `coneParams(0)` returns flat identity
+#### Scenario: Reverse side of turning page renders as shaded blank paper
+- **WHEN** a turning page curls and rotates past perpendicular so its reverse side faces the camera
+- **THEN** the back face renders with the warm blank-paper color and diffuse shading without culling artifacts or holes
+
+### Requirement: Pure three-stage `coneParams(p)` parameter mapping
+JavaScript SHALL map turn progress `p` to `(u_theta, u_Ay, u_rho)` via a pure, unit-tested 3-stage empirical function `coneParams(p)` that returns `(theta = pi/2, rho = 0)` at `p = 0`, lifts the lower-right corner mid-turn, and uncurls smoothly toward flat as `|p| -> 1`.
+
+#### Scenario: `coneParams(0)` returns flat resting identity
 - **WHEN** `coneParams(0)` is evaluated
-- **THEN** it returns `u_theta = pi/2` and a valid `u_Ay < min(P_y)`
+- **THEN** it returns `u_theta = pi/2`, `u_rho = 0`, and a valid `u_Ay < min(P_y)`
+
+#### Scenario: `coneParams(p)` follows three-stage lift and uncurl trajectory
+- **WHEN** `coneParams(p)` is sampled from `p = 0` to `p = 1`
+- **THEN** `u_theta` dips below `pi/2` while `u_Ay` moves negative mid-turn and eases back toward `pi/2` as `u_rho -> pi` and `u_Ay` becomes strongly negative
+
+### Requirement: Single-page `curl` rendering alongside flat `slide` and `stack` modes
+When `curl` mode is active, the renderer SHALL anchor the turning page (`p in [0, 1)`) at the centered binding edge over the flat revealed page underneath (`p in (-1, 0)`) and fade smoothly near `p -> 1`; when `slide` or `stack` mode is active, pages SHALL render flat at their DOM frame bounds.
+
+#### Scenario: Switching between `curl`, `slide`, and `stack` updates WebGL deformation behavior
+- **WHEN** the user selects `curl`, `slide`, or `stack` in `.controls`
+- **THEN** `curl` renders 3D cone turns over the stationary next page while `slide` and `stack` render flat aligned pages matching their CSS layout
 
 ### Requirement: Read-only CSS `--progress` bridge and change-gated uniform updates
-Once per animation frame while scrolling, JavaScript SHALL read CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`, and nothing else as animation state), identify the turning page index `i` and signed progress `p in [-1, 1]` directly from `--progress`, and update shader uniforms only when `--progress` changed since the previous frame, maintaining 60 fps during page turns.
+Once per active animation frame, JavaScript SHALL read CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`, and nothing else as animation state) and update uniforms and draw only when `--progress`, `paint`, resize, or light config changed.
 
 #### Scenario: Uniforms update at 60 fps on `--progress` change and idle when stationary
 - **WHEN** active page `--progress` changes during user scrolling or native snap settling
