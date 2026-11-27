@@ -44,14 +44,19 @@ Each `.page` SHALL run a linear keyframe animation from `--progress: -1` to `--p
 - **WHEN** `.book` contains only one `.page` (`N = 1`) and has zero scrollable overflow
 - **THEN** the `view(inline)` timeline is inactive and `--progress` resolves cleanly to `0`
 
-### Requirement: Extensible transition modes (`curl`, `slide`, and `stack`) with JS-free switching
+### Requirement: Extensible transition modes (`slide`, `stack`, and `curl`) with JS-free switching
 
-The reader SHALL support transition modes switched via native `<input type="radio" name="mode">` controls and CSS `:has()` without JS control listeners: `curl` (default 3D cone page curl), `slide` (horizontal slide), and `stack` (smaller pages above larger ones, top page sliding left while the centered underneath page rises/recedes along Z). Additional modes SHALL be addable without modifying scroll logic.
+The reader SHALL support transition modes switched via native `<input type="radio" name="mode">` controls and CSS `:has()` without JS control listeners, ordered `Slide`, `Stack`, `Curl` in `.controls`: `slide` (default horizontal slide), `stack` (smaller pages above larger ones, top page sliding left while the centered underneath page rises/recedes along Z), and `curl` (3D cone page curl). Additional modes SHALL be addable without modifying scroll logic.
 
-#### Scenario: Curl mode is selected by default
+#### Scenario: Slide mode is selected by default
 
 - **WHEN** the reader loads initially without user mode selection
-- **THEN** the `curl` radio option is checked by default
+- **THEN** the `slide` radio option is checked by default
+
+#### Scenario: Mode controls appear in Slide, Stack, Curl order
+
+- **WHEN** the reader controls toolbar renders
+- **THEN** the transition mode radio options appear in order `Slide`, `Stack`, `Curl`, with `Curl` as the last option
 
 #### Scenario: Forward swipe in `stack` mode
 
@@ -73,20 +78,11 @@ The reader SHALL support transition modes switched via native `<input type="radi
 - **WHEN** the user activates the `curl` radio control
 - **THEN** the transition behavior switches to `curl` immediately via CSS `:has()` with zero JavaScript control event listeners or DOM scroll mutations
 
-### Requirement: Pure-CSS debug readout for `--progress`
-
-A debug view toggled by a JS-free `<input type="checkbox" name="debug">` control and CSS `:has()` SHALL display each page's live `--progress` value on screen for visual verification.
-
-#### Scenario: On-screen debug readout reflects live scroll state
-
-- **WHEN** the debug checkbox is checked and the user scrolls across pages
-- **THEN** each page renders its current `--progress` value on screen updating in real time without JavaScript listeners
-
 ### Requirement: Zero JavaScript for CSS scroll state and controls
 
-The CSS scroll state engine SHALL NOT use JavaScript to compute or mutate `--progress`, drive pure-CSS transitions, switch transition modes, toggle debug output, or handle scroll/input/control events.
+The CSS scroll state engine SHALL NOT use JavaScript to compute or mutate `--progress`, drive pure-CSS transitions, switch transition modes, or handle scroll/input/control events.
 
 #### Scenario: Zero JavaScript handles scroll state or controls
 
-- **WHEN** `src/` is inspected for CSS scroll state, mode switching, or debug readout behavior
+- **WHEN** `src/` is inspected for CSS scroll state or mode switching behavior
 - **THEN** no JavaScript sets `--progress`, mutates transition styles, or registers scroll, input, or control event listeners
