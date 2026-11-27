@@ -2,30 +2,32 @@
 
 ## Why
 
-With native scrolling (Phase 1), declarative scroll state (Phase 2), and live HTML-in-Canvas textures on a tessellated WebGL2 plane (Phase 3) in place, Phase 4 delivers the core visual goal of **WebBook 3D**: deforming the page mesh in real time using the isometric cone page-curl model of Hong, Card & Chen (2006) driven exclusively by reading CSS `--progress` via CSSOM.
+With native scrolling (Phase 1), declarative scroll state (Phase 2), and live HTML-in-Canvas textures on a tessellated WebGL2 plane (Phase 3) in place, Phase 4 delivers the core visual goal of **WebBook 3D**: deforming the page mesh in real time using the isometric cone page-curl and binding-axis rotation model of Hong, Card & Chen (SIGGRAPH 2004 Sketches, `sketches_0135`, *"Deforming Pages of 3D Electronic Books"*) driven exclusively by reading CSS `--progress` via CSSOM.
 
 ## What Changes
 
-- Implement the exact Hong, Card & Chen cone deformation equations in GLSL ES 3.00 (`src/shaders/cone.vert.glsl`), transforming each flat vertex `P = (P_x, P_y, 0)` around a cone with apex `A = (0, A_y, 0)` and half-angle `theta` (`u_theta`, `u_Ay`) while preserving undeformed UVs and edge lengths.
-- Support deformed normals/lighting (pending `OQ-06`), back-face rendering for the reverse side of turning pages (pending `OQ-04`), and optional binding-axis Y-rotation (pending `OQ-09`).
-- Implement the read-only JS bridge that reads CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`) once per active frame, identifies the turning page index `i` and signed progress `p` in `[-1, 1]`, and maps `p` via a pure, unit-tested `coneParams(p)` function to shader uniforms only when `--progress` changes.
-- Add a CPU reference port of the cone math and unit test suite verifying isometric distance preservation (`|T - A| = R`), identity at `theta = pi/2`, and domain invariants (pending `OQ-10`).
+- Implement the exact Hong, Card & Chen cone deformation (`u_theta`, `u_Ay`, Eqs. 1–3 with cancellation-safe `R + A_y`) composed with concurrent binding-axis Y-rotation (`u_rho` in `[0, pi]`) in GLSL ES 3.00 (`src/shaders/cone.vert.glsl`), preserving undeformed UVs and exact isometric distances.
+- Compute finite-difference deformed normals in `src/shaders/cone.vert.glsl` and update `src/shaders/page.frag.glsl` with two-sided rendering (`gl.disable(gl.CULL_FACE)`): live HTML page texture on the front face (`gl_FrontFacing`), warm blank-paper tone (`#fdfbf7`-matched) on the back face for single-page mode (deferring next-page back textures to any future double-page spread mode), and minimal Lambert diffuse lighting driven by a code-configurable `u_lightPos` uniform (with no UI controls; future Browser Motion API control is logged separately in `motion-driven-lighting`).
+- Add `Curl` as the new default transition mode radio option alongside `Slide` and `Stack` in `.controls` (switched via native radio inputs and CSS `:has()` with zero JS control listeners); keep `Slide` and `Stack` flat in WebGL while `Curl` renders the turning page anchored to the centered binding over the flat revealed page underneath.
+- Implement the read-only JS bridge in `src/gl/renderer.ts` that reads CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`) once per active frame, identifies the turning page and signed progress `p` in `[-1, 1]`, maps `p` via a pure 3-stage empirical `coneParams(p)` function (`src/gl/coneMath.ts`), and updates uniforms and draws only when `--progress`, `paint`, or resize changes occur.
+- Add a pure CPU reference port (`deformVertexCone`) in `src/gl/coneMath.ts` and a `vitest` unit test suite (`src/gl/coneMath.test.ts`) verifying isometric distance preservation (`|V - A| = R`), flat identity at `(theta = pi/2, rho = 0)`, 3-stage curl/uncurl curves, and domain invariants.
 
 ### Out of Scope
 
-- Two-page spreads, book covers, page thickness, or complex shadows beyond optional diffuse Lambert shading.
-- Any JS scroll writes, input event listeners, or animation libraries.
+- Two-page spreads (and rendering next-page textures on reverse faces), book covers, page thickness, or shadow mapping.
+- Light-source UI sliders or Browser Motion API integration (logged in `motion-driven-lighting`).
+- Any JS scroll writes, navigation/control input event listeners, or animation libraries.
 
 ## Capabilities
 
 ### New Capabilities
-- `cone-page-curl`: GLSL ES 3.00 cone vertex deformation shader (Hong, Card & Chen model), pure `coneParams(p)` parameter mapping, CPU math verification tests, and read-only CSS `--progress` uniform bridge.
+- `cone-page-curl`: GLSL ES 3.00 cone vertex deformation and binding-axis rotation shader (Hong, Card & Chen model), deformed-normal Lambert shading with configurable `u_lightPos`, blank-paper back-face rendering, pure 3-stage `coneParams(p)` and CPU verification tests, single-page `Curl` mode rendering, and read-only CSS `--progress` uniform bridge.
 
 ### Modified Capabilities
-<!-- None -->
+- `css-scroll-state`: Adds `curl` as the default transition mode radio option alongside `slide` and `stack`, preserving zero-JS mode switching via CSS `:has()`.
 
 ## Impact
 
-- **Files created/affected**: `src/shaders/cone.vert.glsl`, `src/shaders/page.frag.glsl`, `src/gl/` (uniform bridge, render loop idle/active gating, `coneParams.ts`), and unit tests (e.g., `src/gl/coneParams.test.ts`).
-- **Dependencies**: Optional devDependency for unit testing (`Vitest`, pending `OQ-10`); zero new runtime dependencies.
-- **Open Questions**: `OQ-04` (back-of-page texture/color), `OQ-06` (diffuse lighting), `OQ-07` (paper title citation confirmation), `OQ-08` (`coneParams(p)` trajectory), `OQ-09` (third uniform `u_rho` for binding-axis rotation), and `OQ-10` (Vitest devDependency).
+- **Files created/affected**: `index.html`, `src/style.css`, `src/shaders/cone.vert.glsl`, `src/shaders/page.frag.glsl`, `src/gl/coneMath.ts`, `src/gl/coneMath.test.ts`, `src/gl/renderer.ts`, `package.json`.
+- **Dependencies**: `vitest` added as a `devDependency` for CPU math unit testing; zero new runtime dependencies.
+- **Open Questions**: All Phase 4 open questions (`OQ-04`, `OQ-06`, `OQ-07`, `OQ-08`, `OQ-09`, `OQ-10`) are resolved.

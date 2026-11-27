@@ -1,16 +1,17 @@
 # Tasks: Phase 4, Cone Vertex Shader & Uniform Wiring
 
-## 1. Open Questions & Pure CPU Cone Math Reference
+## 1. Test Setup & Pure CPU Cone Math Reference
 
-- [ ] 1.1 Resolve `OQ-04` (back-of-page rendering), `OQ-06` (diffuse lighting), `OQ-07` (paper title citation), `OQ-08` (`coneParams(p)` curve), `OQ-09` (third uniform `u_rho` for binding-axis Y-rotation), and `OQ-10` (Vitest devDependency) with the user, verifying the updates in `design.md` and `proposal.md`
-- [ ] 1.2 Implement the pure CPU reference port of the Hong, Card & Chen cone equations and `coneParams(p)` in `src/gl/coneMath.ts`, and verify via unit tests that `|T - A| = R` holds across a vertex grid sweep of `(theta, A_y)`, `T = P` holds at `theta = pi/2`, `coneParams(0)` returns `theta = pi/2`, and outputs always satisfy `u_Ay < min(y)` and `u_theta in (theta_min, pi/2]`
+- [ ] 1.1 Install `vitest` as a `devDependency` and add a `"test"` script in `package.json`
+- [ ] 1.2 Implement the pure CPU reference port of the Hong, Card & Chen cone equations plus binding-axis Y-rotation (`deformVertexCone`) and 3-stage `coneParams(p)` in `src/gl/coneMath.ts`, and verify via unit tests in `src/gl/coneMath.test.ts` that `|V - A| = R` holds across a vertex grid sweep of `(theta, A_y, rho)`, `V = P` holds at `(theta = pi/2, rho = 0)`, `coneParams(0)` returns flat identity, and outputs satisfy `u_Ay < 0`, `u_theta in (theta_min, pi/2]`, and `u_rho in [0, pi]`
 
-## 2. Cone Vertex Shader & Fragment Pipeline
+## 2. Cone Vertex Shader, Blank Back Face & Configurable Lighting
 
-- [ ] 2.1 Implement the Hong, Card & Chen cone deformation equations, undeformed UV pass-through, optional binding-axis rotation (`OQ-09`), and deformed surface normal calculation (`OQ-06`) in GLSL ES 3.00 (`src/shaders/cone.vert.glsl`), and verify shader compilation succeeds with zero warnings
-- [ ] 2.2 Configure back-face rendering and optional diffuse shading in `src/shaders/page.frag.glsl` and the WebGL state (`OQ-04`, `OQ-06`), and verify both front and back faces render without flicker, holes, or `NaN`/`Inf` artifacts across the full curl range
+- [ ] 2.1 Implement `src/shaders/cone.vert.glsl` in GLSL ES 3.00 with exact Hong, Card & Chen cone deformation (cancellation-safe `R + A_y`), `R_y(-u_rho)` binding-axis rotation, finite-difference deformed normal calculation, and undeformed UV pass-through, verifying clean shader compilation with zero warnings
+- [ ] 2.2 Update `src/shaders/page.frag.glsl` and WebGL pipeline state (`gl.disable(gl.CULL_FACE)`) for warm blank-paper back-face rendering (`!gl_FrontFacing` with flipped normal) and Lambert diffuse shading driven by a code-configurable `u_lightPos` uniform (preserving premultiplied alpha output)
 
-## 3. Read-Only `--progress` Uniform Bridge & Performance Verification
+## 3. Curl Mode Controls, `--progress` Uniform Bridge & Verification
 
-- [ ] 3.1 Implement the `requestAnimationFrame` uniform bridge in `src/gl/` that reads CSS `--progress` on active/visible `.page` element(s) via CSSOM (`computedStyleMap().get('--progress')` / `getComputedStyle`) once per active frame, identifies page index `i` and signed progress `p in [-1, 1]`, updates `u_theta` and `u_Ay` via `coneParams(p)` only when `--progress` changed, and idles when stationary
-- [ ] 3.2 Verify in Chrome 157+ that slow and fast scrolling curls the page smoothly 1:1 with finger/trackpad input and native snap completion at 60 fps (Chrome Performance panel), all unit tests and `npm run build` pass, and zero navigation listeners, animation libraries, or JS DOM movement exist in `src/`
+- [ ] 3.1 Add `Curl` as the default `<input type="radio" name="mode" value="curl" checked>` option alongside `Slide` and `Stack` in `index.html` and `src/style.css` with zero JS control listeners
+- [ ] 3.2 Update `src/gl/renderer.ts` with the read-only CSS `--progress` CSSOM bridge (`computedStyleMap().get('--progress')` / `getComputedStyle`), single-page `Curl` composition (turning page anchored to centered binding over flat underneath page with smooth end-of-turn fade), flat `Slide`/`Stack` preservation, configurable light-position API, and change-gated idle-when-stationary render loop
+- [ ] 3.3 Verify in Chrome 158+ that slow and fast scrolling and native snap curl smoothly 1:1 at 60 fps, blank-paper back face and Lambert shading render without flicker, holes, or `NaN`/`Inf` artifacts, `Slide`/`Stack`/`Debug`/`.page__badge` interactions still work, `npm test` and `npm run build` pass, and zero navigation/control listeners, animation libraries, or JS DOM scroll mutations exist in `src/`
