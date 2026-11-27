@@ -36,8 +36,12 @@ Each `.page` SHALL run a linear keyframe animation from `--progress: -1` to `--p
 - **WHEN** `.book` contains only one `.page` (`N = 1`) and has zero scrollable overflow
 - **THEN** the `view(inline)` timeline is inactive and `--progress` resolves cleanly to `0`
 
-### Requirement: Extensible pure-CSS transition modes (`slide` and `stack`) with JS-free switching
-The reader SHALL support pure-CSS transition modes switched solely via native `<input type="radio" name="mode">` controls and CSS `:has()` without JavaScript: `slide` (default horizontal slide) and `stack` (smaller page numbers stacked above larger ones, with the top page sliding out/in from the left while the horizontally centered underneath page rises forward from behind on forward swipes and recedes back behind on backward swipes along the z-axis). Additional modes SHALL be addable without modifying scroll logic.
+### Requirement: Extensible transition modes (`curl`, `slide`, and `stack`) with JS-free switching
+The reader SHALL support transition modes switched via native `<input type="radio" name="mode">` controls and CSS `:has()` without JS control listeners: `curl` (default 3D cone page curl), `slide` (horizontal slide), and `stack` (smaller pages above larger ones, top page sliding left while the centered underneath page rises/recedes along Z). Additional modes SHALL be addable without modifying scroll logic.
+
+#### Scenario: Curl mode is selected by default
+- **WHEN** the reader loads initially without user mode selection
+- **THEN** the `curl` radio option is checked by default
 
 #### Scenario: Forward swipe in `stack` mode
 - **WHEN** `stack` mode is selected and the user swipes forward from page `i` to page `i + 1`
@@ -50,6 +54,10 @@ The reader SHALL support pure-CSS transition modes switched solely via native `<
 #### Scenario: Mode switching between `slide` and `stack` uses zero JS
 - **WHEN** the user activates the `slide` or `stack` radio control
 - **THEN** the transition behavior switches immediately via CSS `:has()` with zero JavaScript event listeners or DOM style mutations
+
+#### Scenario: Mode switching to `curl` uses zero JS
+- **WHEN** the user activates the `curl` radio control
+- **THEN** the transition behavior switches to `curl` immediately via CSS `:has()` with zero JavaScript control event listeners or DOM scroll mutations
 
 ### Requirement: Pure-CSS debug readout for `--progress`
 A debug view toggled by a JS-free `<input type="checkbox" name="debug">` control and CSS `:has()` SHALL display each page's live `--progress` value on screen for visual verification.
