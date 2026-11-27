@@ -14,7 +14,7 @@ A browser e-book reader proof of concept where native CSS scrolling drives all p
 
 ## Local Setup
 
-Requires **Node.js 24 LTS** (see [`.nvmrc`](.nvmrc)):
+Requires **Node.js 26 LTS** (see [`.nvmrc`](.nvmrc)):
 
 ```sh
 nvm use

@@ -6,14 +6,14 @@ Defines repository-level Node.js version locking, Oxlint/Oxfmt code quality chec
 
 ## Requirements
 
-### Requirement: Locked Node.js 24 LTS version
+### Requirement: Locked Node.js 26 LTS version
 
-The repository SHALL lock the Node.js runtime version to Node.js 24 LTS via `.nvmrc` (`24`) and `package.json` `engines.node` (`>=24 <25`).
+The repository SHALL lock the Node.js runtime version to Node.js 26 LTS via `.nvmrc` (`26`) and `package.json` `engines.node` (`>=26 <27`).
 
-#### Scenario: Version files declare Node.js 24 LTS consistently
+#### Scenario: Version files declare Node.js 26 LTS consistently
 
 - **WHEN** `.nvmrc` and `package.json` are inspected
-- **THEN** `.nvmrc` specifies `24` and `package.json` `engines.node` targets Node 24 LTS
+- **THEN** `.nvmrc` specifies `26` and `package.json` `engines.node` targets Node 26 LTS
 
 ### Requirement: Oxlint and Oxfmt code quality tooling
 
@@ -31,7 +31,7 @@ A GitHub Actions workflow at `.github/workflows/ci.yml` SHALL run on pushes to `
 #### Scenario: CI workflow enforces lint, format, test, and build
 
 - **WHEN** `.github/workflows/ci.yml` is inspected or triggered on GitHub Actions
-- **THEN** it installs dependencies with `npm ci` on Node 24 and runs `lint`, `format:check`, `test`, and `build`
+- **THEN** it installs dependencies with `npm ci` on Node 26 and runs `lint`, `format:check`, `test`, and `build`
 
 ### Requirement: Concise project README with spec links
 
