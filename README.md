@@ -65,5 +65,3 @@ All behavior is specified under [`openspec/`](openspec/):
   - [`cone-page-curl`](openspec/specs/cone-page-curl/spec.md)
   - [`project-tooling`](openspec/specs/project-tooling/spec.md)
   - [`public-demo-deployment`](openspec/specs/public-demo-deployment/spec.md)
-
-AI agents: read [`AGENTS.md`](AGENTS.md) first.
