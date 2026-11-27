@@ -1,13 +1,13 @@
 # Tasks
 
-## 1. Resolve Open Questions & CSS Check
+## 1. CSS `display: contents` Compatibility Check
 
-- [ ] 1.1 Resolve `OQ-SPREAD-1` (confirm landscape `stack` mode transitions the 2-page spread as a unit) and verify Chrome 158+ `display: contents` behavior with `view(inline)` timelines.
+- [ ] 1.1 Verify Chrome 158+ `display: contents` behavior with `view(inline)` timelines (`OQ-SPREAD-1` already resolved: landscape `stack` mode transitions the full 2-page spread as one unit).
 
 ## 2. Responsive Spread DOM & CSS
 
-- [ ] 2.1 Group the 18 `.page` elements in `index.html` into 10 `<section class="spread">` containers (`[spacer, 1]`, `[2, 3]`, ..., `[16, 17]`, `[18, spacer]`).
-- [ ] 2.2 Implement `@media (orientation: portrait)` (`display: contents` on `.spread`, `display: none` on `.spread__spacer`, per-page `--progress`) and `@media (orientation: landscape)` (`.spread` as `flex: 0 0 100%` snap unit with spread `view(inline)` `--progress` and side-by-side half-page sizing) in `src/style.css`, verifying `npm run build` succeeds.
+- [ ] 2.1 Group the 18 `.page` elements in `index.html` (or dynamically in `src/main.ts` if `book-library` has landed) into `<section class="spread">` containers (`[spacer, 1]`, `[2, 3]`, ..., `[16, 17]`, `[18, spacer]`).
+- [ ] 2.2 Implement `@media (orientation: portrait)` (`display: contents` on `.spread`, `display: none` on `.spread__spacer`, per-page `--progress`) and `@media (orientation: landscape)` (`.spread` as `flex: 0 0 100%` snap unit with spread `view(inline)` `--progress`, side-by-side half-page sizing, and `stack-pin` / `stack-reveal` applied to `.spread` in `stack` mode) in `src/style.css`, verifying `npm run build` succeeds.
 
 ## 3. Double-Sided Landscape Curl Renderer & Shader
 

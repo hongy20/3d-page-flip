@@ -5,40 +5,39 @@
 See [proposal.md](proposal.md). Static inspection of `public/pages/page_1.svg` through `page_18.svg` confirmed:
 
 - All 18 files use page-prefixed element IDs (`p1___...`..`p18___...`) and 89 `@font-face` font families with **zero cross-page collisions**.
-- Total size across all 18 SVGs is ~15 MB (primarily embedded base64 JPEG backgrounds).
-- URL / contact string audit across `<text>` nodes:
-  - `page_1.svg`: `www.spain.info`
-  - `page_2.svg`: `brochures@tourspain.es`
-  - `page_8.svg`, `page_10.svg`, `page_12.svg`, `page_13.svg`: `123rf.com` (photo credit text)
-  - `page_17.svg`: `www.visita.malaga.eu`, `visita@malaga.eu`, `www.spain.info`
-  - `page_18.svg`: `Spain.info`
-  - (Concatenated false positives like `sKaleja.ES` on `page_7` and `route.Com` on `page_12` are excluded.)
+- Total size across all 18 SVGs is ~14 MB (568 KB–1.1 MB each, primarily embedded base64 JPEG backgrounds).
+- All 6 main links are **already authored** in the SVGs as native `<a ...><title>...</title><rect .../></a>` transparent-hit-rect overlays with `aria-label`, `target="_blank"`, `rel="nofollow"`, and built-in `<style>` rules (`a { cursor: pointer; rect { fill: transparent; } }`, `a:focus { outline: solid medium royalblue; }`):
+  - `page_1.svg`: `http://www.spain.info`
+  - `page_2.svg`: `mailto:brochures@tourspain.es`
+  - `page_17.svg`: `http://www.spain.info`, `mailto:visita@malaga.eu`, `http://www.visita.malaga.eu`
+  - `page_18.svg`: `http://spain.info`
+- Unlinked `123rf.com` photo credits (`page_8.svg`, `page_10.svg`, `page_12.svg`, `page_13.svg`) and `@spain` labels (`page_18.svg`) are intentionally left unlinked.
 
 ## Goals / Non-Goals
 
 **Goals:**
 
-- Expose all SVG `<text>` content and links to assistive technologies inside `.page__content`.
-- Encode clickable hyperlinks directly inside `public/pages/page_*.svg` using standard SVG `<a href="..." target="_blank" rel="noopener noreferrer">`.
-- Keep drag/scroll hit-testing smooth (`pointer-events: none` on non-interactive SVG artwork, `pointer-events: auto` on `.page__svg a`).
+- Expose inline `<svg>` `<text>` content and existing native SVG `<a>` links to assistive technologies and pointer/keyboard users inside `.page__content`.
+- Keep `src/svgLoader.ts` clean, base-URL-aware, and reusable for a follow-up `book-library` change.
+- Keep drag/scroll hit-testing smooth (`pointer-events: none` on `.page__svg`, `pointer-events: all` on `.page__svg a`).
 
 **Non-Goals:**
 
+- Editing `public/pages/page_*.svg`.
 - Re-authoring or splitting embedded JPEG raster layers inside the SVGs.
 - Adding JS click listeners to intercept or open SVG URLs.
 
 ## Decisions
 
-1. **Pure SVG-spec links**: Wrap matching `<text>` / `<tspan>` elements in standard SVG `<a href="..." target="_blank" rel="noopener noreferrer">` elements (using `https://` for `www.*` / domain URLs and `mailto:` if emails are included per `OQ-SVG-2`), styled via SVG/CSS with `pointer-events: auto; cursor: pointer`.
-2. **HTML-in-Canvas paint readiness**: Ensure `canvas.requestPaint?.()` fires once inline `<svg>` nodes are mounted (if runtime-loaded) so `texElementSubImage2D` captures the full SVG artwork.
-3. **Inline pointer-events discipline**: Keep `pointer-events: none` on `.page__svg` (or non-link children) and enable `pointer-events: auto` on `.page__svg a` so swiping over text/images never interferes with native scrolling.
+1. **Runtime `fetch()` + inline `<svg>` DOM injection (`OQ-SVG-1` resolved)**: Replace `<img class="page__svg">` in `index.html` with lightweight `<div class="page__svg-slot" data-svg="pages/page_N.svg">` placeholders (avoiding a ~14 MB `index.html` and avoiding double-downloading via `<img>` + `fetch()`). Implement `src/svgLoader.ts` resolving asset URLs via `${import.meta.env.BASE_URL}${relativePath}`, prioritizing page 1 first so initial render is fast, fetching remaining pages concurrently, parsing via `DOMParser` (`image/svg+xml`), adding `class="page__svg"` on the root `<svg>`, replacing each slot in `.page__content`, and invoking an `onPageMounted` callback (`canvas.requestPaint?.()`) so HTML-in-Canvas captures textures as pages mount.
+2. **Preserve existing native SVG `<a>` links untouched (`OQ-SVG-2` resolved)**: Keep all 6 existing `<a>` elements in `public/pages/page_*.svg` as-is (`http://`, `mailto:`, `rel="nofollow"`, `target="_blank"`, transparent `<rect>` hit targets) with zero edits to the SVG files.
+3. **Inline pointer-events discipline**: Keep `pointer-events: none` on `.page__svg` and set `.page__svg a { pointer-events: all; cursor: pointer; }` so transparent `<rect>` hit-overlays inside `<a>` reliably receive clicks/hover while non-link SVG artwork never blocks native scroll dragging.
 
 ## Risks / Trade-offs
 
-- **~15 MB inline SVG payload** → Evaluated via `OQ-SVG-1` (benchmarking runtime `fetch()` DOM injection vs build-time HTML inlining).
-- **Split `<text>` nodes across characters/words** → Some PDF-exported SVGs split URLs across adjacent `<text>` nodes; wrap the contiguous group or `<text>` elements inside a single `<a>` so the whole URL forms one accessible link target.
+- **Async mount vs initial WebGL paint** → Mitigated by prioritizing page 1 first and calling `canvas.requestPaint?.()` whenever a page SVG mounts.
+- **Unscoped `<style>` inside inline SVGs (`a { ... }`)** → Checked: `index.html` currently has no conflicting `<a>` styling; if later pages add `<a>` controls (e.g. a back-to-library link in `book-library`), scope controls with explicit classes.
 
 ## Open Questions
 
-- **`OQ-SVG-1` (Mounting strategy)**: Should the 18 SVGs be fetched and injected as inline `<svg>` at runtime (small initial `index.html`, async mount + `requestPaint`) or inlined into `index.html` at build time (~15 MB HTML, zero runtime fetches)? Benchmark both in Chrome to pick the better tradeoff.
-- **`OQ-SVG-2` (Link scope inside SVGs)**: Should SVG `<a>` links wrap only tourism website URLs (`www.spain.info`, `www.visita.malaga.eu`, `Spain.info`), or also wrap email addresses (`mailto:brochures@tourspain.es`, `mailto:visita@malaga.eu`) and/or `123rf.com` photo credits?
+None (`OQ-SVG-1` and `OQ-SVG-2` resolved; no blocking open questions remain).

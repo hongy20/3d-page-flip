@@ -2,22 +2,22 @@
 
 ## Purpose
 
-Maps opt-in browser device motion and orientation sensor readings into bounded `u_lightPos` coordinates for WebBook 3D's Lambert paper shading while preserving idle-when-stationary rendering and native CSS scroll physics.
+Maps opt-in browser device orientation readings (`DeviceOrientationEvent`) into bounded `u_lightPos` coordinates for WebBook 3D's Lambert paper shading while preserving idle-when-stationary rendering and native CSS scroll physics.
 
 ## ADDED Requirements
 
-### Requirement: Opt-in browser motion and orientation mapping to `u_lightPos`
+### Requirement: Opt-in browser orientation mapping to `u_lightPos`
 
-The application SHALL provide an opt-in adapter that reads browser motion or orientation events (`OQ-11`, `OQ-12`) and maps device tilt into 3D light coordinates passed to the `cone-page-curl` renderer's `u_lightPos` uniform.
+The application SHALL provide an opt-in `Motion light` toggle in `.controls` (off by default) that listens to `DeviceOrientationEvent` (`beta` and `gamma` tilt) when enabled and maps device tilt into 3D light coordinates passed to the `cone-page-curl` renderer's `u_lightPos` uniform.
 
 #### Scenario: Tilting an enabled device shifts page shading
 
-- **WHEN** motion-driven lighting is enabled and the user tilts the device
+- **WHEN** the `Motion light` toggle is enabled and `DeviceOrientationEvent` reports a device tilt
 - **THEN** `u_lightPos` updates proportionally to the tilt angle and updates the curled page's Lambert shading
 
 ### Requirement: Bounded light coordinates, smoothing, and deadband gating
 
-The motion-to-light mapper SHALL clamp tilt inputs and output `u_lightPos` to finite physical bounds (`z > 0` in front of the page) and apply smoothing plus a deadband epsilon (`OQ-13`) so stationary sensor noise triggers zero uniform updates or redraws.
+The motion-to-light mapper SHALL clamp tilt inputs and output `u_lightPos` to finite physical bounds (`z > 0` in front of the page), apply low-pass smoothing and a Euclidean deadband threshold, and pause updates while `document.hidden` is true so stationary sensor noise triggers zero uniform updates or redraws.
 
 #### Scenario: Stationary device noise does not wake the render loop
 
@@ -26,11 +26,11 @@ The motion-to-light mapper SHALL clamp tilt inputs and output `u_lightPos` to fi
 
 ### Requirement: Permission handling and silent fallback to static default lighting
 
-When motion sensors require explicit user permission, lack browser support, or are denied/disabled, the application SHALL handle permission states cleanly without uncaught errors and SHALL fall back silently to the static default `u_lightPos` (`OQ-14`).
+When `DeviceOrientationEvent.requestPermission` is present, enabling `Motion light` SHALL invoke it from the toggle gesture; when sensors are unsupported, denied, disabled, or on desktop without inertial sensors, the application SHALL fall back silently to the static default `u_lightPos` with no pointer-parallax fallback.
 
-#### Scenario: Unsupported or denied sensor falls back cleanly
+#### Scenario: Unsupported, denied, or desktop browser falls back cleanly
 
-- **WHEN** the browser does not expose motion sensors or the user denies sensor permission
+- **WHEN** the browser lacks orientation events, the user denies sensor permission, or the user is on desktop without inertial sensors
 - **THEN** no unhandled exceptions occur and the renderer continues shading with the static default `u_lightPos`
 
 ### Requirement: Zero interference with native CSS scroll navigation or `--progress`

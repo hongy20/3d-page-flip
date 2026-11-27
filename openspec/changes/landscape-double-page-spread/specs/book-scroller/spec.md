@@ -4,7 +4,7 @@
 
 ### Requirement: Landscape physical magazine double-page spread layout
 
-On `@media (orientation: landscape)`, `.book` SHALL lay out pages as a physical magazine: the first spread displays Page 1 on the right half only; middle spreads display paired `(2, 3)` through `(16, 17)` side-by-side sharing a central spine; the last spread displays Page 18 on the left half only. On `@media (orientation: portrait)`, single-page layout (`1..18`) SHALL remain unchanged.
+On `@media (orientation: landscape)`, `.book` SHALL lay out pages as a physical magazine: the first spread displays Page 1 on the right half only; middle spreads display paired `(2, 3)` through `(16, 17)` side-by-side sharing a central spine; the last spread displays Page 18 on the left half only. In landscape `stack` mode, each two-page `.spread` SHALL transition as one unit via pure CSS. On `@media (orientation: portrait)`, single-page layout (`1..18`) SHALL remain unchanged.
 
 #### Scenario: Initial landscape spread shows Page 1 on the right half
 
@@ -20,6 +20,11 @@ On `@media (orientation: landscape)`, `.book` SHALL lay out pages as a physical 
 
 - **WHEN** the reader is scrolled to the end in landscape orientation
 - **THEN** only Page 18 is visible, positioned on the left half of the central spine with the right half empty
+
+#### Scenario: Landscape stack mode transitions the full two-page spread as one unit
+
+- **WHEN** `stack` mode is active in landscape orientation and the user swipes between spreads
+- **THEN** each two-page `.spread` slides and rises from underneath as a single unit via pure CSS without JS scroll mutations
 
 #### Scenario: Portrait orientation preserves single-page 1..18 layout
 
