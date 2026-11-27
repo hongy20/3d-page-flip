@@ -7,7 +7,7 @@
 
 ## 2. Public Release & Verification
 
-- [ ] 2.1 Switch `hongy20/3d-page-flip` repository visibility to public, enable GitHub Pages (GitHub Actions source), push to `main`, and verify the live GitHub Pages URL loads all pages and styles with zero 404 errors.
+- [x] 2.1 Switch `hongy20/3d-page-flip` repository visibility to public, enable GitHub Pages (GitHub Actions source), push to `main`, and verify the live GitHub Pages URL loads all pages and styles with zero 404 errors.
 
 ## Workflow follow-up
 
