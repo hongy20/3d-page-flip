@@ -57,8 +57,6 @@ describe("getBookPagePaths", () => {
   it("produces paths compatible with resolveSvgUrl across root and subpath bases", () => {
     const paths = getBookPagePaths(BOOKS[0]);
     expect(resolveSvgUrl(paths[0], "/")).toBe("/books/malaga/page_1.svg");
-    expect(resolveSvgUrl(paths[17], "/3d-page-flip/")).toBe(
-      "/3d-page-flip/books/malaga/page_18.svg",
-    );
+    expect(resolveSvgUrl(paths[17], "/dropp/")).toBe("/dropp/books/malaga/page_18.svg");
   });
 });

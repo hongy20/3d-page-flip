@@ -71,7 +71,7 @@ export function showUnsupportedMessage(missing: string[]): void {
 
   const message = document.createElement("p");
   message.append(
-    "WebBook 3D requires Chrome 158+ with ",
+    "Dropp requires Chrome 158+ with ",
     createCode("chrome://flags/#canvas-draw-element"),
     " enabled. Missing capabilities:",
   );

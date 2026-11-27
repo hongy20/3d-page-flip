@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Provides the native CSS horizontal scroll-snap book container, renderer-agnostic HTML/SVG page structure, paper layout styling, and zero-JS navigation physics for WebBook 3D.
+Provides the native CSS horizontal scroll-snap book container, renderer-agnostic HTML/SVG page structure, paper layout styling, and zero-JS navigation physics for Dropp.
 
 ## Requirements
 

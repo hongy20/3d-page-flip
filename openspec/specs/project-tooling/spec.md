@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Defines repository-level Node.js version locking, Oxlint/Oxfmt code quality checks, GitHub Actions CI, and concise project README documentation for WebBook 3D.
+Defines repository-level Node.js version locking, Oxlint/Oxfmt code quality checks, GitHub Actions CI, and concise project README documentation for Dropp.
 
 ## Requirements
 
@@ -35,7 +35,7 @@ A GitHub Actions workflow at `.github/workflows/ci.yml` SHALL run on pushes to `
 
 ### Requirement: Concise project README with spec links
 
-`README.md` SHALL provide a concise description of WebBook 3D, what it does, local setup and repository structure, and links to `openspec/specs/` and `openspec/`, without project-progress or status tracking.
+`README.md` SHALL provide a concise description of Dropp, what it does, local setup and repository structure, and links to `openspec/specs/` and `openspec/`, without project-progress or status tracking.
 
 #### Scenario: README documents project overview, setup, structure, and spec links
 

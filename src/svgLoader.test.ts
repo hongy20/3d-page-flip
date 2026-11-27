@@ -90,12 +90,8 @@ describe("resolveSvgUrl", () => {
   });
 
   it("normalizes subpath bases with or without a trailing slash", () => {
-    expect(resolveSvgUrl("pages/page_2.svg", "/3d-page-flip/")).toBe(
-      "/3d-page-flip/pages/page_2.svg",
-    );
-    expect(resolveSvgUrl("/pages/page_2.svg", "/3d-page-flip")).toBe(
-      "/3d-page-flip/pages/page_2.svg",
-    );
+    expect(resolveSvgUrl("pages/page_2.svg", "/dropp/")).toBe("/dropp/pages/page_2.svg");
+    expect(resolveSvgUrl("/pages/page_2.svg", "/dropp")).toBe("/dropp/pages/page_2.svg");
     expect(resolveSvgUrl("books/malaga/page_1.svg", "")).toBe("/books/malaga/page_1.svg");
   });
 });
@@ -135,9 +131,9 @@ describe("mountInlineSvgs", () => {
     const d2 = createDeferred<Response>();
     const d3 = createDeferred<Response>();
     const deferredByUrl = new Map([
-      ["/3d-page-flip/pages/page_1.svg", d1],
-      ["/3d-page-flip/pages/page_2.svg", d2],
-      ["/3d-page-flip/pages/page_3.svg", d3],
+      ["/dropp/pages/page_1.svg", d1],
+      ["/dropp/pages/page_2.svg", d2],
+      ["/dropp/pages/page_3.svg", d3],
     ]);
 
     const fetchedUrls: string[] = [];
@@ -153,7 +149,7 @@ describe("mountInlineSvgs", () => {
 
     const mounted: Array<{ index: number; hasClass: boolean }> = [];
     const run = mountInlineSvgs([first.slot, second.slot, third.slot], {
-      baseUrl: "/3d-page-flip",
+      baseUrl: "/dropp",
       fetchFn,
       createParser: () => createFakeParser(),
       onPageMounted: (svg, index) => {
@@ -162,14 +158,14 @@ describe("mountInlineSvgs", () => {
       },
     });
 
-    expect(fetchedUrls).toEqual(["/3d-page-flip/pages/page_1.svg"]);
+    expect(fetchedUrls).toEqual(["/dropp/pages/page_1.svg"]);
 
     d1.resolve(new Response("<svg></svg>", { status: 200 }));
     await vi.waitFor(() => {
       expect(fetchedUrls).toEqual([
-        "/3d-page-flip/pages/page_1.svg",
-        "/3d-page-flip/pages/page_2.svg",
-        "/3d-page-flip/pages/page_3.svg",
+        "/dropp/pages/page_1.svg",
+        "/dropp/pages/page_2.svg",
+        "/dropp/pages/page_3.svg",
       ]);
     });
 

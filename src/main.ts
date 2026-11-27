@@ -5,7 +5,7 @@ import { initBookRenderer } from "./gl/renderer";
 import { mountInlineSvgs } from "./svgLoader";
 
 function showBookNotFound(requestedId: string | null): void {
-  document.title = "Book Not Found — WebBook 3D";
+  document.title = "Book Not Found — Dropp";
 
   const aside = document.createElement("aside");
   aside.className = "unsupported";
@@ -80,14 +80,14 @@ const manifest = resolveBook(requestedBookId);
 if (!manifest) {
   showBookNotFound(requestedBookId);
 } else {
-  document.title = `${manifest.title} — WebBook 3D`;
+  document.title = `${manifest.title} — Dropp`;
 
   const canvas = document.getElementById("book-canvas");
   const book = document.querySelector<HTMLElement>(".book");
 
   if (canvas instanceof HTMLCanvasElement && book) {
     book.style.setProperty("--page-aspect", manifest.aspectRatio);
-    book.setAttribute("aria-label", `${manifest.title} — WebBook 3D Reader`);
+    book.setAttribute("aria-label", `${manifest.title} — Dropp Reader`);
     populateBookPages(book, manifest);
 
     const pages = Array.from(book.querySelectorAll<HTMLElement>(".page__content"));
