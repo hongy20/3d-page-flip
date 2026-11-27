@@ -12,9 +12,11 @@ Currently, in `stack` transition mode, the underneath page (`i + 1`) remains com
 ## Capabilities
 
 ### New Capabilities
+
 <!-- None -->
 
 ### Modified Capabilities
+
 - `css-scroll-state`: Update the `stack` mode transition requirement and forward/backward swipe scenarios to specify the z-axis rise/recede depth behavior of the centered underneath page.
 
 ## Impact

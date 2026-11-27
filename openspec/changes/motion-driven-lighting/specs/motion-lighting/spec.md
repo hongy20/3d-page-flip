@@ -7,29 +7,37 @@ Maps opt-in browser device motion and orientation sensor readings into bounded `
 ## ADDED Requirements
 
 ### Requirement: Opt-in browser motion and orientation mapping to `u_lightPos`
-The application SHALL provide an opt-in adapter that reads browser motion or orientation events (`OQ-11`, `OQ-12`) and maps device tilt into 3D light coordinates passed to the Phase 4 renderer's `u_lightPos` uniform.
+
+The application SHALL provide an opt-in adapter that reads browser motion or orientation events (`OQ-11`, `OQ-12`) and maps device tilt into 3D light coordinates passed to the `cone-page-curl` renderer's `u_lightPos` uniform.
 
 #### Scenario: Tilting an enabled device shifts page shading
+
 - **WHEN** motion-driven lighting is enabled and the user tilts the device
 - **THEN** `u_lightPos` updates proportionally to the tilt angle and updates the curled page's Lambert shading
 
 ### Requirement: Bounded light coordinates, smoothing, and deadband gating
+
 The motion-to-light mapper SHALL clamp tilt inputs and output `u_lightPos` to finite physical bounds (`z > 0` in front of the page) and apply smoothing plus a deadband epsilon (`OQ-13`) so stationary sensor noise triggers zero uniform updates or redraws.
 
 #### Scenario: Stationary device noise does not wake the render loop
+
 - **WHEN** motion-driven lighting is enabled on a stationary device whose sensor readings fluctuate within the deadband threshold
 - **THEN** `u_lightPos` remains unchanged and the WebGL render loop issues zero draw calls
 
 ### Requirement: Permission handling and silent fallback to static default lighting
+
 When motion sensors require explicit user permission, lack browser support, or are denied/disabled, the application SHALL handle permission states cleanly without uncaught errors and SHALL fall back silently to the static default `u_lightPos` (`OQ-14`).
 
 #### Scenario: Unsupported or denied sensor falls back cleanly
+
 - **WHEN** the browser does not expose motion sensors or the user denies sensor permission
 - **THEN** no unhandled exceptions occur and the renderer continues shading with the static default `u_lightPos`
 
 ### Requirement: Zero interference with native CSS scroll navigation or `--progress`
+
 Motion and orientation adapters SHALL NOT modify scroll position, register touch/wheel/pointer navigation listeners, or alter CSS `--progress` state.
 
 #### Scenario: Motion lighting leaves scroll physics untouched
+
 - **WHEN** motion-driven lighting is active while the user scrolls or swipes pages
 - **THEN** scroll snapping and CSS `--progress` behave identically to static lighting

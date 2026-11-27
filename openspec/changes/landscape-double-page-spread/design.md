@@ -7,11 +7,13 @@ See [proposal.md](proposal.md). Currently `.book` holds 18 `.page` flex items di
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Support physical magazine spreads (`[blank, 1]`, `[2, 3]`, ..., `[16, 17]`, `[18, blank]`) automatically in `@media (orientation: landscape)` using the exact same single DOM and zero-JS CSS scroll-snap model.
 - Preserve existing 18-page portrait single-page behavior untouched.
 - Render paired reverse-side page textures on curled leaves in landscape `curl` mode.
 
 **Non-Goals:**
+
 - Adding a separate manual spread toggle control.
 - Modifying single-page portrait blank-paper back-face behavior.
 

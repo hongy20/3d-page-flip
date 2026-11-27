@@ -2,31 +2,33 @@
 
 ## Context
 
-See `proposal.md` for motivation. Phase 4 (`phase-4-cone-vertex-shader`) exposes a configurable `u_lightPos` uniform in `src/gl/renderer.ts` and `src/shaders/page.frag.glsl` with a static default. This change explores driving `u_lightPos` from browser motion/orientation APIs while preserving WebBook 3D's idle-when-stationary GPU loop and zero-JS scroll physics.
+See `proposal.md` for motivation. The `cone-vertex-shader` change exposes a configurable `u_lightPos` uniform in `src/gl/renderer.ts` and `src/shaders/page.frag.glsl` with a static default. This change explores driving `u_lightPos` from browser motion/orientation APIs while preserving WebBook 3D's idle-when-stationary GPU loop and zero-JS scroll physics.
 
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Isolate sensor math (`motionToLightPos`) in a pure, unit-tested TypeScript module with zero DOM/WebGL imports.
 - Smooth noisy sensor streams and apply an epsilon deadband so stationary devices remain idle.
-- Integrate cleanly with Phase 4's `u_lightPos` setter without modifying cone geometry or scroll behavior.
+- Integrate cleanly with the renderer's `u_lightPos` setter without modifying cone geometry or scroll behavior.
 
 **Non-Goals:**
+
 - Changing Hong, Card & Chen cone math or `cone.vert.glsl`.
 - Dynamic shadows, specular highlights, or tilt-to-scroll interactions.
 
 ## Decisions
 
 1. **Pure `motionToLightPos` Mapper + Low-Pass Smoothing**
-   - *Decision*: Separate sensor event acquisition from coordinate mapping (`src/gl/motionLighting.ts`), clamping tilt angles (e.g., `beta`/`gamma` or gravity vector components) into bounded offsets around the default `u_lightPos` with `lightPos.z > 0`.
-   - *Rationale*: Enables deterministic Vitest verification of bounds, clamping, and deadband filtering without physical mobile hardware.
+   - _Decision_: Separate sensor event acquisition from coordinate mapping (`src/gl/motionLighting.ts`), clamping tilt angles (e.g., `beta`/`gamma` or gravity vector components) into bounded offsets around the default `u_lightPos` with `lightPos.z > 0`.
+   - _Rationale_: Enables deterministic Vitest verification of bounds, clamping, and deadband filtering without physical mobile hardware.
 
 2. **Deadband Change-Gating for Idle GPU Loop**
-   - *Decision*: Apply exponential moving average smoothing and only invoke the renderer's `setLightPosition(x, y, z)` when `distance(nextLight, committedLight) > epsilon` (`OQ-13`).
-   - *Rationale*: Prevents MEMS accelerometer/gyroscope micro-jitter from triggering continuous 60 fps WebGL redraws when the device is resting on a table or held steady.
+   - _Decision_: Apply exponential moving average smoothing and only invoke the renderer's `setLightPosition(x, y, z)` when `distance(nextLight, committedLight) > epsilon` (`OQ-13`).
+   - _Rationale_: Prevents MEMS accelerometer/gyroscope micro-jitter from triggering continuous 60 fps WebGL redraws when the device is resting on a table or held steady.
 
 3. **Graceful Static Fallback**
-   - *Decision*: Treat missing APIs, denied permissions, or inactive opt-in state as a no-op that preserves the Phase 4 default `u_lightPos` (with optional desktop fallback to be decided in `OQ-14`).
+   - _Decision_: Treat missing APIs, denied permissions, or inactive opt-in state as a no-op that preserves the default `u_lightPos` (with optional desktop fallback to be decided in `OQ-14`).
 
 ## Risks / Trade-offs
 

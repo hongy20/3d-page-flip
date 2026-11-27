@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 import {
   AY_END,
   AY_START,
@@ -7,8 +7,8 @@ import {
   coneParams,
   deformVertexCone,
   turnOpacity,
-} from './coneMath';
-import { PAGE_ASPECT } from './planeGeometry';
+} from "./coneMath";
+import { PAGE_ASPECT } from "./planeGeometry";
 
 function sampleGrid(steps = 12): Array<readonly [number, number]> {
   const points: Array<readonly [number, number]> = [];
@@ -22,10 +22,10 @@ function sampleGrid(steps = 12): Array<readonly [number, number]> {
   return points;
 }
 
-describe('deformVertexCone', () => {
+describe("deformVertexCone", () => {
   const grid = sampleGrid(12);
 
-  it('preserves exact isometric distance |V - A| = R across (theta, Ay, rho) sweeps', () => {
+  it("preserves exact isometric distance |V - A| = R across (theta, Ay, rho) sweeps", () => {
     const thetas = [0.3, 0.7, 1.1, HALF_PI];
     const ays = [AY_START, -1.5, AY_END, -100, -1000];
     const rhos = [0, 0.5, HALF_PI, 2.4, Math.PI];
@@ -48,7 +48,7 @@ describe('deformVertexCone', () => {
     }
   });
 
-  it('matches flat identity at (theta = pi/2, rho = 0) and left-side flat at (theta = pi/2, rho = pi)', () => {
+  it("matches flat identity at (theta = pi/2, rho = 0) and left-side flat at (theta = pi/2, rho = pi)", () => {
     for (const Ay of [AY_START, -2.0, AY_END]) {
       for (const [px, py] of grid) {
         const [rx, ry, rz] = deformVertexCone(px, py, HALF_PI, Ay, 0);
@@ -65,10 +65,10 @@ describe('deformVertexCone', () => {
   });
 });
 
-describe('coneParams', () => {
+describe("coneParams", () => {
   const grid = sampleGrid(10);
 
-  it('returns flat resting identity at p = 0', () => {
+  it("returns flat resting identity at p = 0", () => {
     const params = coneParams(0);
     expect(params.theta).toBe(HALF_PI);
     expect(params.rho).toBe(0);
@@ -76,7 +76,7 @@ describe('coneParams', () => {
     expect(params.Ay).toBeLessThan(0);
   });
 
-  it('enforces domain invariants, finite vertices, and beta < pi across [-1, 1] and edge inputs', () => {
+  it("enforces domain invariants, finite vertices, and beta < pi across [-1, 1] and edge inputs", () => {
     const samples: number[] = [];
     for (let i = -50; i <= 50; i += 1) {
       samples.push(i / 50);
@@ -106,7 +106,7 @@ describe('coneParams', () => {
     }
   });
 
-  it('follows the three-stage lift, curl, and uncurl trajectory symmetrically', () => {
+  it("follows the three-stage lift, curl, and uncurl trajectory symmetrically", () => {
     let prevAy = Number.POSITIVE_INFINITY;
     let prevRho = -1;
     let minTheta = HALF_PI;
@@ -141,8 +141,8 @@ describe('coneParams', () => {
   });
 });
 
-describe('turnOpacity', () => {
-  it('stays 1 until 0.85 and fades monotonically to 0 at 1', () => {
+describe("turnOpacity", () => {
+  it("stays 1 until 0.85 and fades monotonically to 0 at 1", () => {
     expect(turnOpacity(0)).toBe(1);
     expect(turnOpacity(0.5)).toBe(1);
     expect(turnOpacity(0.85)).toBe(1);

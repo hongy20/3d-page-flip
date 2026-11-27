@@ -3,6 +3,7 @@
 ## Context
 
 See [proposal.md](proposal.md). Static inspection of `public/pages/page_1.svg` through `page_18.svg` confirmed:
+
 - All 18 files use page-prefixed element IDs (`p1___...`..`p18___...`) and 89 `@font-face` font families with **zero cross-page collisions**.
 - Total size across all 18 SVGs is ~15 MB (primarily embedded base64 JPEG backgrounds).
 - URL / contact string audit across `<text>` nodes:
@@ -16,11 +17,13 @@ See [proposal.md](proposal.md). Static inspection of `public/pages/page_1.svg` t
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Expose all SVG `<text>` content and links to assistive technologies inside `.page__content`.
 - Encode clickable hyperlinks directly inside `public/pages/page_*.svg` using standard SVG `<a href="..." target="_blank" rel="noopener noreferrer">`.
 - Keep drag/scroll hit-testing smooth (`pointer-events: none` on non-interactive SVG artwork, `pointer-events: auto` on `.page__svg a`).
 
 **Non-Goals:**
+
 - Re-authoring or splitting embedded JPEG raster layers inside the SVGs.
 - Adding JS click listeners to intercept or open SVG URLs.
 

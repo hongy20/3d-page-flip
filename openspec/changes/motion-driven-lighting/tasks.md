@@ -7,5 +7,5 @@
 
 ## 2. Sensor Adapter & Renderer Integration
 
-- [ ] 2.1 Implement the browser sensor adapter, permission flow, and static fallback wiring to Phase 4's `u_lightPos` setter in `src/gl/motionLighting.ts` and `src/gl/renderer.ts` (plus opt-in UI control if selected in `OQ-12`), verifying `npm test` and `npm run build` pass
+- [ ] 2.1 Implement the browser sensor adapter, permission flow, and static fallback wiring to the renderer's `u_lightPos` setter in `src/gl/motionLighting.ts` and `src/gl/renderer.ts` (plus opt-in UI control if selected in `OQ-12`), verifying `npm test` and `npm run build` pass
 - [ ] 2.2 Verify on device/Chrome DevTools Sensors panel and desktop fallback that tilting shifts `u_lightPos` shading smoothly, stationary readings produce zero idle redraws, denied/unsupported sensors fall back silently, and native CSS scroll physics remain untouched

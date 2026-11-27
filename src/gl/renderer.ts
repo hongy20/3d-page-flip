@@ -1,15 +1,11 @@
-import coneVertSource from '../shaders/cone.vert.glsl?raw';
-import pageFragSource from '../shaders/page.frag.glsl?raw';
-import { createPageModelMatrix, createPerspectiveViewMatrix, multiplyMat4 } from './camera';
-import { HALF_PI, coneParams, turnOpacity } from './coneMath';
-import { createGeometrySync } from './geometrySync';
-import { createPlaneMesh } from './planeGeometry';
-import { createPageTextureManager } from './textures';
-import type {
-  CanvasPaintEvent,
-  DrawableCanvasElement,
-  HtmlInCanvasWebGL2Context,
-} from './types';
+import coneVertSource from "../shaders/cone.vert.glsl?raw";
+import pageFragSource from "../shaders/page.frag.glsl?raw";
+import { createPageModelMatrix, createPerspectiveViewMatrix, multiplyMat4 } from "./camera";
+import { HALF_PI, coneParams, turnOpacity } from "./coneMath";
+import { createGeometrySync } from "./geometrySync";
+import { createPlaneMesh } from "./planeGeometry";
+import { createPageTextureManager } from "./textures";
+import type { CanvasPaintEvent, DrawableCanvasElement, HtmlInCanvasWebGL2Context } from "./types";
 
 export type Vec3 = readonly [number, number, number];
 
@@ -25,7 +21,7 @@ export interface BookRendererHandle {
   dispose(): void;
 }
 
-type ReaderMode = 'curl' | 'slide' | 'stack';
+type ReaderMode = "curl" | "slide" | "stack";
 
 const EPS = 1e-4;
 const PROGRESS_CHANGE_EPS = 1e-5;
@@ -34,12 +30,12 @@ const LIGHT_CHANGE_EPS = 1e-5;
 function compileShader(gl: WebGL2RenderingContext, type: GLenum, source: string): WebGLShader {
   const shader = gl.createShader(type);
   if (!shader) {
-    throw new Error('Failed to create WebGL2 shader');
+    throw new Error("Failed to create WebGL2 shader");
   }
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const info = gl.getShaderInfoLog(shader) ?? 'Unknown shader compile error';
+    const info = gl.getShaderInfoLog(shader) ?? "Unknown shader compile error";
     gl.deleteShader(shader);
     throw new Error(info);
   }
@@ -57,7 +53,7 @@ function createProgram(
   if (!program) {
     gl.deleteShader(vert);
     gl.deleteShader(frag);
-    throw new Error('Failed to create WebGL2 program');
+    throw new Error("Failed to create WebGL2 program");
   }
   gl.attachShader(program, vert);
   gl.attachShader(program, frag);
@@ -66,7 +62,7 @@ function createProgram(
   gl.deleteShader(frag);
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const info = gl.getProgramInfoLog(program) ?? 'Unknown program link error';
+    const info = gl.getProgramInfoLog(program) ?? "Unknown program link error";
     gl.deleteProgram(program);
     throw new Error(info);
   }
@@ -82,23 +78,23 @@ function readPageProgress(pageEl: HTMLElement): number {
   const typedEl = pageEl as HTMLElement & {
     computedStyleMap?: () => { get(property: string): unknown };
   };
-  const rawTyped = typedEl.computedStyleMap?.().get('--progress') as
+  const rawTyped = typedEl.computedStyleMap?.().get("--progress") as
     | { value?: number }
     | null
     | undefined;
-  if (rawTyped && typeof rawTyped.value === 'number' && Number.isFinite(rawTyped.value)) {
+  if (rawTyped && typeof rawTyped.value === "number" && Number.isFinite(rawTyped.value)) {
     return rawTyped.value;
   }
-  const parsed = parseFloat(getComputedStyle(pageEl).getPropertyValue('--progress'));
+  const parsed = parseFloat(getComputedStyle(pageEl).getPropertyValue("--progress"));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function readActiveMode(): ReaderMode {
   const checked = document.querySelector<HTMLInputElement>('input[name="mode"]:checked');
-  if (checked?.value === 'slide' || checked?.value === 'stack') {
+  if (checked?.value === "slide" || checked?.value === "stack") {
     return checked.value;
   }
-  return 'curl';
+  return "curl";
 }
 
 /**
@@ -113,22 +109,22 @@ export function initBookRenderer(
   options?: BookRendererOptions,
 ): BookRendererHandle {
   const program = createProgram(gl, coneVertSource, pageFragSource);
-  const uMvp = gl.getUniformLocation(program, 'u_mvp');
-  const uModel = gl.getUniformLocation(program, 'u_model');
-  const uPageTex = gl.getUniformLocation(program, 'u_pageTex');
-  const uOpacity = gl.getUniformLocation(program, 'u_opacity');
-  const uTheta = gl.getUniformLocation(program, 'u_theta');
-  const uAy = gl.getUniformLocation(program, 'u_Ay');
-  const uRho = gl.getUniformLocation(program, 'u_rho');
-  const uZBias = gl.getUniformLocation(program, 'u_zBias');
-  const uLightPos = gl.getUniformLocation(program, 'u_lightPos');
+  const uMvp = gl.getUniformLocation(program, "u_mvp");
+  const uModel = gl.getUniformLocation(program, "u_model");
+  const uPageTex = gl.getUniformLocation(program, "u_pageTex");
+  const uOpacity = gl.getUniformLocation(program, "u_opacity");
+  const uTheta = gl.getUniformLocation(program, "u_theta");
+  const uAy = gl.getUniformLocation(program, "u_Ay");
+  const uRho = gl.getUniformLocation(program, "u_rho");
+  const uZBias = gl.getUniformLocation(program, "u_zBias");
+  const uLightPos = gl.getUniformLocation(program, "u_lightPos");
 
   const mesh = createPlaneMesh(gl);
   const textureManager = createPageTextureManager(canvas, gl, pages);
   const geometrySync = createGeometrySync(canvas);
   const pageEntries = pages.map((content) => ({
-    page: content.closest<HTMLElement>('.page') ?? content,
-    frame: content.closest<HTMLElement>('.page__frame') ?? content,
+    page: content.closest<HTMLElement>(".page") ?? content,
+    frame: content.closest<HTMLElement>(".page__frame") ?? content,
     content,
   }));
 
@@ -138,7 +134,7 @@ export function initBookRenderer(
   let resizeDirty = true;
   let lightDirty = true;
   let lastMode: ReaderMode | null = null;
-  let lastLayoutSignature = '';
+  let lastLayoutSignature = "";
   let settleFramesRemaining = 0;
   let rafId: number | null = null;
   let disposed = false;
@@ -194,7 +190,12 @@ export function initBookRenderer(
     }
 
     const canvasRect = canvas.getBoundingClientRect();
-    if (canvasRect.width <= 0 || canvasRect.height <= 0 || canvas.width <= 0 || canvas.height <= 0) {
+    if (
+      canvasRect.width <= 0 ||
+      canvasRect.height <= 0 ||
+      canvas.width <= 0 ||
+      canvas.height <= 0
+    ) {
       return;
     }
 
@@ -205,15 +206,12 @@ export function initBookRenderer(
     for (let i = 0; i < pageEntries.length; i += 1) {
       const p = readPageProgress(pageEntries[i].page);
       progressScratch[i] = p;
-      if (
-        Number.isNaN(lastProgress[i]) ||
-        Math.abs(p - lastProgress[i]) > PROGRESS_CHANGE_EPS
-      ) {
+      if (Number.isNaN(lastProgress[i]) || Math.abs(p - lastProgress[i]) > PROGRESS_CHANGE_EPS) {
         progressChanged = true;
       }
     }
 
-    let layoutSignature = '';
+    let layoutSignature = "";
     let centeredRect: DOMRect | null = null;
     const flatVisiblePages: Array<{
       index: number;
@@ -222,7 +220,7 @@ export function initBookRenderer(
       opacity: number;
     }> = [];
 
-    if (mode === 'curl') {
+    if (mode === "curl") {
       const sampleRect = pageEntries[0].frame.getBoundingClientRect();
       const centeredLeft = canvasRect.left + (canvasRect.width - sampleRect.width) * 0.5;
       const centeredTop = canvasRect.top + (canvasRect.height - sampleRect.height) * 0.5;
@@ -241,17 +239,12 @@ export function initBookRenderer(
           );
         }
       }
-      layoutSignature = sigParts.join('|');
+      layoutSignature = sigParts.join("|");
     }
 
     const layoutChanged = layoutSignature !== lastLayoutSignature;
     const shouldDraw =
-      textureDirty ||
-      resizeDirty ||
-      lightDirty ||
-      modeChanged ||
-      progressChanged ||
-      layoutChanged;
+      textureDirty || resizeDirty || lightDirty || modeChanged || progressChanged || layoutChanged;
 
     if (!shouldDraw) {
       if (settleFramesRemaining > 0) {
@@ -291,7 +284,7 @@ export function initBookRenderer(
 
     const vpMatrix = createPerspectiveViewMatrix(canvasRect.width, canvasRect.height);
 
-    if (mode === 'curl' && centeredRect) {
+    if (mode === "curl" && centeredRect) {
       let settledIdx = -1;
       let turningIdx = -1;
       let underIdx = -1;
@@ -415,18 +408,14 @@ export function initBookRenderer(
     }
   });
   resizeObserver.observe(canvas);
-  canvas.addEventListener('paint', onPaint);
+  canvas.addEventListener("paint", onPaint);
 
   canvas.requestPaint?.();
   scheduleRender();
 
   return {
     setLightPos(pos) {
-      if (
-        !Number.isFinite(pos[0]) ||
-        !Number.isFinite(pos[1]) ||
-        !Number.isFinite(pos[2])
-      ) {
+      if (!Number.isFinite(pos[0]) || !Number.isFinite(pos[1]) || !Number.isFinite(pos[2])) {
         return;
       }
       if (
@@ -452,7 +441,7 @@ export function initBookRenderer(
         rafId = null;
       }
       resizeObserver.disconnect();
-      canvas.removeEventListener('paint', onPaint);
+      canvas.removeEventListener("paint", onPaint);
       textureManager.dispose();
       mesh.dispose();
       gl.deleteProgram(program);
