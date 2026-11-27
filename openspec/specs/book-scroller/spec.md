@@ -17,12 +17,17 @@ The project SHALL be initialized with Vite (`vanilla-ts`), configured with `stri
 
 ### Requirement: Book scroller and renderer-agnostic page DOM structure
 
-`index.html` SHALL contain one scroller element (`.book`) holding 18 page elements (`.page`), each containing static HTML and runtime-mounted inline `<svg>` content (`.page__content`) authored without renderer-specific coupling, displaying the 18 page SVGs (`public/pages/page_1.svg`..`page_18.svg`) with interactive CSS (`:hover`) elements and preserved native SVG links while preserving native DOM accessibility.
+`reader.html` SHALL contain one scroller element (`.book`) whose `.page` elements (`1..N`) and `--page-aspect` are constructed from the selected catalog book and populated at runtime with inline `<svg>` content (`.page__content`) displaying `public/books/<id>/page_1.svg`..`page_N.svg`, interactive `:hover` badges, a back-to-library link in `.controls`, and preserved native SVG links.
 
 #### Scenario: Eighteen accessible HTML/SVG pages rendered
 
-- **WHEN** `index.html` is loaded in Chrome
+- **WHEN** `reader.html` is loaded in Chrome with the default Málaga catalog book
 - **THEN** `.book` contains 18 `.page` elements rendering inline `page_1.svg` through `page_18.svg` and interactive `:hover` styling
+
+#### Scenario: Selected catalog book renders N accessible HTML/SVG pages
+
+- **WHEN** `reader.html?book=<id>` is loaded in Chrome for a catalog book with `N` pages
+- **THEN** `.book` contains `N` `.page` elements rendering inline `page_1.svg` through `page_N.svg` with `--page-aspect` set from the book manifest and interactive `:hover` styling
 
 ### Requirement: Native horizontal flex scroll-snap container with momentum multi-page swipe
 
