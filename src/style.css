@@ -202,6 +202,15 @@ body {
   view-timeline: --page-view inline;
 }
 
+body:has(input[name='mode'][value='curl']:checked) .book {
+  background-color: rgba(0, 0, 0, 0.001);
+}
+
+body:has(input[name='mode'][value='curl']:checked) .page {
+  overflow: visible;
+  z-index: calc(sibling-count() - sibling-index());
+}
+
 body:has(input[name='mode'][value='stack']:checked) .page {
   overflow: visible;
   z-index: calc(sibling-count() - sibling-index());
