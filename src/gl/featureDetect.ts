@@ -5,7 +5,7 @@ export type FeatureDetectResult =
   | { supported: false; missing: string[] };
 
 /**
- * Checks upfront for Chrome 158+ HTML-in-Canvas and WebGL2 capabilities without throwing.
+ * Checks upfront for Chrome 157+ HTML-in-Canvas and WebGL2 capabilities without throwing.
  */
 export function detectHtmlInCanvas(canvas: HTMLCanvasElement): FeatureDetectResult {
   const missing: string[] = [];
@@ -67,14 +67,11 @@ export function showUnsupportedMessage(missing: string[]): void {
   card.className = "unsupported__card";
 
   const heading = document.createElement("h1");
-  heading.textContent = "Chrome 158+ HTML-in-Canvas Required";
+  heading.textContent = "Chrome 157+ HTML-in-Canvas Required";
 
   const message = document.createElement("p");
-  message.append(
-    "Dropp requires Chrome 158+ with ",
-    createCode("chrome://flags/#canvas-draw-element"),
-    " enabled. Missing capabilities:",
-  );
+  message.textContent =
+    "Dropp requires Chrome 157+ with HTML-in-Canvas support. Missing capabilities:";
 
   const list = document.createElement("ul");
   for (const item of missing) {
@@ -86,10 +83,4 @@ export function showUnsupportedMessage(missing: string[]): void {
   card.append(heading, message, list);
   aside.append(card);
   document.body.append(aside);
-}
-
-function createCode(text: string): HTMLElement {
-  const code = document.createElement("code");
-  code.textContent = text;
-  return code;
 }
