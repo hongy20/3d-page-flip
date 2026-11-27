@@ -1,11 +1,14 @@
 # Tasks: Motion-Driven Physical Lighting
 
-## 1. Open Questions & Pure Motion Mapping
+## 1. Pure Motion Mapping & Smoothing Presets
 
-- [ ] 1.1 Resolve `OQ-11` (sensor API), `OQ-12` (opt-in & permission UX), `OQ-13` (smoothing & deadband thresholds), and `OQ-14` (desktop fallback) with the user, updating `design.md` and `proposal.md` before coding
-- [ ] 1.2 Implement the pure `motionToLightPos` mapper, smoothing filter, and deadband change-gating in `src/gl/motionLighting.ts` and verify bounds (`z > 0`), clamping, and deadband suppression via `vitest` unit tests in `src/gl/motionLighting.test.ts`
+- [ ] 1.1 Implement the pure `motionToLightPos` mapper (`beta`/`gamma` tilt → bounded `u_lightPos` with `z > 0`), parameterized exponential moving average smoothing (with named `balanced`, `snappy`, and `gentle` presets, defaulting to `balanced`), and Euclidean deadband change-gating in `src/gl/motionLighting.ts`, plus unit tests in `src/gl/motionLighting.test.ts` verifying bounds, clamping, smoothing, and deadband suppression (`npm test`).
 
-## 2. Sensor Adapter & Renderer Integration
+## 2. Opt-In Control, Orientation Adapter & Verification
 
-- [ ] 2.1 Implement the browser sensor adapter, permission flow, and static fallback wiring to the renderer's `u_lightPos` setter in `src/gl/motionLighting.ts` and `src/gl/renderer.ts` (plus opt-in UI control if selected in `OQ-12`), verifying `npm test` and `npm run build` pass
-- [ ] 2.2 Verify on device/Chrome DevTools Sensors panel and desktop fallback that tilting shifts `u_lightPos` shading smoothly, stationary readings produce zero idle redraws, denied/unsupported sensors fall back silently, and native CSS scroll physics remain untouched
+- [ ] 2.1 Add the opt-in `Motion light` toggle pill to `.controls` (`index.html` or `reader.html` + `src/style.css`), wire the `DeviceOrientationEvent` (`beta`/`gamma`) adapter, `requestPermission()` handling, `visibilitychange` pause, and static desktop fallback to `renderer.setLightPos(...)` in `src/gl/motionLighting.ts` and `src/main.ts`, verifying `npm run lint`, `npm run format:check`, `npm test`, and `npm run build` pass.
+- [ ] 2.2 Verify on mobile device / Chrome DevTools Sensors panel and desktop: compare the `balanced` vs `snappy` / `gentle` presets to lock in the best feel/GPU-idle balance, confirm stationary readings produce zero idle redraws, denied/unsupported/desktop environments stay silently at default `u_lightPos`, and native CSS scroll physics remain untouched.
+
+## Workflow follow-up
+
+- Sync delta specs and archive `motion-driven-lighting` via `openspec-archive-change` after implementation and verification are complete.
