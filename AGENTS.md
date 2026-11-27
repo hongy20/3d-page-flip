@@ -4,7 +4,7 @@ Instructions for any AI coding agent working in this repository.
 
 ## Project
 
-**WebBook 3D**: a proof-of-concept browser e-book reader. Native CSS scroll provides
+**Dropp**: a proof-of-concept browser e-book reader. Native CSS scroll provides
 all page-navigation physics; a WebGL overlay renders the live HTML pages (via
 Chrome's HTML-in-Canvas API) deformed by the cone page-curl model of Hong, Card & Chen.
 

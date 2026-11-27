@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Maps opt-in browser device orientation readings (`DeviceOrientationEvent`) into bounded `u_lightPos` coordinates for WebBook 3D's Lambert paper shading while preserving idle-when-stationary rendering and native CSS scroll physics.
+Maps opt-in browser device orientation readings (`DeviceOrientationEvent`) into bounded `u_lightPos` coordinates for Dropp's Lambert paper shading while preserving idle-when-stationary rendering and native CSS scroll physics.
 
 ## ADDED Requirements
 

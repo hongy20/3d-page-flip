@@ -45,7 +45,7 @@ Provides a static catalog of repo-hosted SVG books, an accessible shelf landing 
 
 ### Requirement: Multi-page Vite production build
 
-`vite.config.ts` SHALL configure Rollup `build.rollupOptions.input` with both `index.html` and `reader.html` using relative/base-aware asset links so both local dev/preview and subpath deployments (such as GitHub Pages `/3d-page-flip/`) resolve all entrypoints and assets with zero 404s.
+`vite.config.ts` SHALL configure Rollup `build.rollupOptions.input` with both `index.html` and `reader.html` using relative/base-aware asset links so both local dev/preview and subpath deployments (such as GitHub Pages `/dropp/`) resolve all entrypoints and assets with zero 404s.
 
 #### Scenario: Production build emits both library and reader entrypoints
 

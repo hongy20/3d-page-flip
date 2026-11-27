@@ -2,8 +2,20 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
+function normalizeBasePath(raw: string): string {
+  const trimmed = raw.trim().replace(/^\/+|\/+$/g, "");
+  return trimmed ? `/${trimmed}/` : "/";
+}
+
+function resolveBase(): string {
+  if (process.env.BASE_PATH !== undefined) {
+    return normalizeBasePath(process.env.BASE_PATH);
+  }
+  return process.env.GITHUB_PAGES === "true" ? "/dropp/" : "/";
+}
+
 export default defineConfig({
-  base: process.env.GITHUB_PAGES === "true" ? "/3d-page-flip/" : "/",
+  base: resolveBase(),
   build: {
     rollupOptions: {
       input: {

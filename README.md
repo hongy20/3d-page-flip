@@ -1,4 +1,4 @@
-# WebBook 3D
+# Dropp
 
 A browser e-book reader proof of concept where native CSS scrolling drives all pagination physics and a WebGL2 HTML-in-Canvas overlay renders live HTML/SVG pages deformed by the Hong, Card & Chen cone page-curl model.
 

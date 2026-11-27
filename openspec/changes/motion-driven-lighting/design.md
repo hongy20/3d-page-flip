@@ -2,7 +2,7 @@
 
 ## Context
 
-See [proposal.md](proposal.md) for motivation. The `cone-vertex-shader` change exposes a configurable `u_lightPos` uniform and `setLightPos()` handle in `src/gl/renderer.ts` and `src/shaders/page.frag.glsl` with a static default. This change drives `u_lightPos` from `DeviceOrientationEvent` while preserving WebBook 3D's idle-when-stationary GPU loop and zero-JS scroll physics.
+See [proposal.md](proposal.md) for motivation. The `cone-vertex-shader` change exposes a configurable `u_lightPos` uniform and `setLightPos()` handle in `src/gl/renderer.ts` and `src/shaders/page.frag.glsl` with a static default. This change drives `u_lightPos` from `DeviceOrientationEvent` while preserving Dropp's idle-when-stationary GPU loop and zero-JS scroll physics.
 
 ## Goals / Non-Goals
 
@@ -33,7 +33,7 @@ See [proposal.md](proposal.md) for motivation. The `cone-vertex-shader` change e
 
 4. **Static Desktop Fallback (`OQ-14` resolved)**
    - _Decision_: On desktop browsers without inertial sensors (or when `Motion light` is off/denied/unsupported), stay purely at `DEFAULT_LIGHT_POS` with zero extra pointer listeners; desktop verification uses Chrome DevTools Sensors panel.
-   - _Rationale_: Preserves WebBook 3D's strict zero-pointer-listener discipline and avoids mixing mouse movement with scroll interactions.
+   - _Rationale_: Preserves Dropp's strict zero-pointer-listener discipline and avoids mixing mouse movement with scroll interactions.
 
 ## Risks / Trade-offs
 
