@@ -33,12 +33,17 @@ Start with [`openspec/`](openspec/) (`openspec/changes/` for proposed changes an
 
 - **No JS physics.** Never use animation libraries (GSAP, Framer Motion, spring libs),
   never add `touchstart`/`touchmove`/`pointermove`/`wheel` listeners for navigation,
-  never move DOM elements with JS. Navigation = `scroll-snap-type` only.
+  never move DOM elements with JS. Navigation = `scroll-snap-type` only. A passive,
+  read-only `pointerdown` listener on `.book` may inspect `clientY` strictly to compute
+  `conicContribution` in `[-1, 1]` for curl mode, without ever writing scroll offsets,
+  transforms, or animation physics.
 - **JS reads CSS `--progress`, nothing else, for animation state.** CSS Scroll-Driven Animations (`view(inline)`) are the single source of truth for per-page `--progress`. JS reads `--progress` (e.g. via `computedStyleMap()` / `getComputedStyle()`) solely to convert it into shader uniforms. It never writes scroll position or styles to animate.
 - **No DOM-to-image polyfills.** Never use `html2canvas`, `dom-to-image`, or SVG
   `foreignObject` rasterisation. Use `<canvas content="drawable">` + `texElementSubImage2D`.
-- **Cone model math is fixed.** The vertex shader implements exactly the formulas
-  in `openspec/specs/cone-page-curl/spec.md`. Do not substitute cylinder or other curl models.
+- **Cone model math is fixed.** The vertex shader implements the extended Hong, Card & Chen
+  cone + Y-reflected top cone + Project Austin Part 2 isometric cylinder + continuous
+  `conicContribution` blend formulas defined in `openspec/specs/cone-page-curl/spec.md`
+  (and active change delta specs). Do not substitute unrelated curl models.
 
 ## Conventions
 
