@@ -3,7 +3,7 @@
 Proof of concept: a browser e-book reader that does 3D page curls driven entirely by
 native CSS scrolling and rendered live via Chrome's HTML-in-Canvas API.
 
-> **Status:** Phases 1 & 2 implemented and archived; Phase 3 specification updated from the Chrome 158 HTML-in-Canvas spike and awaiting approval for implementation. Specifications are managed with OpenSpec under [`openspec/`](openspec/).
+> **Status:** Phases 1–3 implemented and archived; Phase 4 (`phase-4-cone-vertex-shader`) next (open questions pending). Specifications are managed with OpenSpec under [`openspec/`](openspec/).
 
 ## Browser Requirements
 
@@ -20,7 +20,7 @@ npm run dev
 
 1. [`phase-1-scaffolding`](openspec/changes/archive/2026-11-24-phase-1-scaffolding/proposal.md) *(archived)* — Project scaffolding & native CSS scroll-snap book container
 2. [`phase-2-css-state-engine`](openspec/changes/archive/2026-11-26-phase-2-css-state-engine/proposal.md) *(archived)* — CSS `@property --progress`, scroll-driven timelines, & pure-CSS transition modes (`slide`, `stack`)
-3. [`phase-3-webgl-html-in-canvas`](openspec/changes/phase-3-webgl-html-in-canvas/proposal.md) — Raw WebGL2 overlay & live HTML-in-Canvas (`<canvas content="drawable">` + `texElementSubImage2D`)
+3. [`phase-3-webgl-html-in-canvas`](openspec/changes/archive/2026-11-27-phase-3-webgl-html-in-canvas/proposal.md) *(archived)* — Raw WebGL2 overlay & live HTML-in-Canvas (`<canvas content="drawable">` + `texElementSubImage2D`)
 4. [`phase-4-cone-vertex-shader`](openspec/changes/phase-4-cone-vertex-shader/proposal.md) — Cone page-curl vertex shader (Hong, Card & Chen) & `--progress` uniform wiring
 
 AI agents: read [`AGENTS.md`](AGENTS.md) first.
