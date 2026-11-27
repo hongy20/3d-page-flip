@@ -207,7 +207,7 @@ body:has(input[name='mode'][value='stack']:checked) .page {
   z-index: calc(sibling-count() - sibling-index());
 }
 
-body:has(input[name='mode'][value='stack']:checked) .page:not(:first-child) .page__content {
+body:has(input[name='mode'][value='stack']:checked) .page:not(:first-child) .page__frame {
   animation-name: stack-pin, stack-reveal;
   animation-duration: auto, auto;
   animation-timing-function: linear, linear;
@@ -241,13 +241,19 @@ body:has(input[name='debug']:checked) .page__content::after {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-.page__content {
+.page__frame {
   --page-aspect: 2115 / 2990;
   position: relative;
   aspect-ratio: var(--page-aspect);
   width: min(100cqw, calc(100cqh * (var(--page-aspect))));
   max-width: 100%;
   max-height: 100%;
+}
+
+.page__content {
+  position: relative;
+  width: 100%;
+  height: 100%;
   background-color: #fdfbf7;
   border-radius: 4px;
   box-shadow:
@@ -293,4 +299,60 @@ body:has(input[name='debug']:checked) .page__content::after {
   transform: translateY(-1px) scale(1.04);
   box-shadow: 0 4px 12px rgba(200, 75, 49, 0.35);
   outline: none;
+}
+
+.stage {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100dvh;
+}
+
+.unsupported {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #1a1917;
+  color: #f6f3ec;
+}
+
+.unsupported__card {
+  max-width: 520px;
+  padding: 24px 28px;
+  border: 1px solid rgba(253, 251, 247, 0.16);
+  border-radius: 12px;
+  background: rgba(34, 32, 29, 0.96);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  line-height: 1.5;
+}
+
+.unsupported__card h1 {
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.unsupported__card p {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: rgba(246, 243, 236, 0.88);
+}
+
+.unsupported__card code {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(253, 251, 247, 0.1);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+}
+
+.unsupported__card ul {
+  padding-left: 20px;
+  font-size: 13px;
+  color: rgba(246, 243, 236, 0.78);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }

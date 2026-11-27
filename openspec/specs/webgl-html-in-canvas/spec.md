@@ -1,20 +1,20 @@
-# Spec Delta: webgl-html-in-canvas
+# webgl-html-in-canvas Specification
 
 ## Purpose
 
 Renders live HTML page content as GPU textures on a densely tessellated, pixel-aligned plane inside a `<canvas content="drawable">` raw WebGL2 overlay using Chrome 158+'s HTML-in-Canvas API (`texElementSubImage2D`, `getElementImageDefaultSize`, `updateElementGeometry`, and `CanvasPaintEvent`) while preserving native CSS scrolling.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Viewport-fixed `<canvas content="drawable">` with WebGL2 context and DPR sizing
-A `<canvas content="drawable">` element SHALL be fixed over the viewport with a raw WebGL2 rendering context (`OQ-01` resolved). Its backing store SHALL be sized to `devicePixelRatio` (capped at `2`) and updated via `ResizeObserver`.
+A `<canvas content="drawable">` element SHALL be fixed over the viewport with a raw WebGL2 rendering context. Its backing store SHALL be sized to `devicePixelRatio` (capped at `2`) and updated via `ResizeObserver`.
 
 #### Scenario: Canvas resizes cleanly with viewport and devicePixelRatio
 - **WHEN** the browser viewport is resized
 - **THEN** `ResizeObserver` updates the canvas backing store dimensions scaled by capped `devicePixelRatio`, updates the WebGL viewport without visual distortion, and refreshes element geometry transforms
 
 ### Requirement: Single-DOM native scroll pass-through and hit-test geometry sync
-The `<main class="book" drawable>` scroller and its pages SHALL live inside `<canvas content="drawable">` (`OQ-03` Option a resolved), with `drawable` on `.book` and each `<article class="page__content" drawable>`. The application SHALL synchronize `.book` and active `.page__content` hit-test geometry via `canvas.updateElementGeometry(el, { canvasTransform })` in canvas backing-store pixel units so user input (trackpad, touch, wheel, keyboard, `:hover`, and button clicks) reaches `.book` and `.page__content` and produces the exact snap pagination and `--progress` behavior established in `book-scroller` and `css-scroll-state`.
+The `<main class="book" drawable>` scroller and its pages SHALL live inside `<canvas content="drawable">`, with `drawable` on `.book` and each `<article class="page__content" drawable>`. The application SHALL synchronize `.book` and active `.page__content` hit-test geometry via `canvas.updateElementGeometry(el, { canvasTransform })` in canvas CSS pixel units so user input (trackpad, touch, wheel, keyboard, `:hover`, and button clicks) reaches `.book` and `.page__content` and produces the exact snap pagination and `--progress` behavior established in `book-scroller` and `css-scroll-state`.
 
 #### Scenario: Native scroll, snap, and button interaction behave identically with WebGL overlay active
 - **WHEN** the user scrolls, swipes, hovers, or clicks interactive controls over the viewport with the WebGL canvas active
@@ -28,7 +28,7 @@ Before initializing the renderer, the application SHALL feature-detect `content=
 - **THEN** an in-page requirement message is shown and the console contains zero uncaught exceptions
 
 ### Requirement: Event-driven live DOM texture upload via `texElementSubImage2D`
-Each `<article class="page__content" drawable>` SHALL be backed by its own WebGL2 texture (`OQ-05` resolved), pre-allocated via `gl.texImage2D` using `canvas.getElementImageDefaultSize(el)` and uploaded exclusively via `gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, el)` (with zero DOM-to-image polyfills). Re-uploads SHALL occur only inside the canvas `paint` (`CanvasPaintEvent`) handler for `.page__content` elements reported in `event.changedElements` (plus initial paint or resize when default size changes)—never every frame and never for unedited pages during scroll—and SHALL be sampled upright (`UNPACK_FLIP_Y_WEBGL = 1`) with premultiplied alpha (`UNPACK_PREMULTIPLY_ALPHA_WEBGL = 1`).
+Each `<article class="page__content" drawable>` SHALL be backed by its own WebGL2 texture, pre-allocated via `gl.texImage2D` using `Math.ceil`-rounded `canvas.getElementImageDefaultSize(el)` dimensions and uploaded exclusively via `gl.texElementSubImage2D(gl.TEXTURE_2D, 0, 0, 0, el)` (with zero DOM-to-image polyfills). Re-uploads SHALL occur only inside the canvas `paint` (`CanvasPaintEvent`) handler for `.page__content` elements reported in `event.changedElements` (plus initial paint or resize when default size changes)—never every frame and never for unedited pages during scroll—and SHALL be sampled upright (`UNPACK_FLIP_Y_WEBGL = 1`) with premultiplied alpha (`UNPACK_PREMULTIPLY_ALPHA_WEBGL = 1`).
 
 #### Scenario: Live DOM edits and CSS hover states update the WebGL texture on paint
 - **WHEN** a user hovers an interactive element on a page or edits page text in Chrome DevTools
