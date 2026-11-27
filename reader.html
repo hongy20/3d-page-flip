@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebBook 3D</title>
+  </head>
+  <body>
+    <fieldset class="controls" aria-label="Reader controls">
+      <legend class="sr-only">Reader controls</legend>
+      <a class="controls__back" href="./" aria-label="Back to library">
+        <span aria-hidden="true">&larr;</span>
+        <span>Library</span>
+      </a>
+      <span class="controls__divider" aria-hidden="true"></span>
+      <div class="controls__group" role="radiogroup" aria-label="Transition mode">
+        <label class="controls__option">
+          <input type="radio" name="mode" value="slide" checked />
+          <span>Slide</span>
+        </label>
+        <label class="controls__option">
+          <input type="radio" name="mode" value="stack" />
+          <span>Stack</span>
+        </label>
+        <label class="controls__option">
+          <input type="radio" name="mode" value="curl" />
+          <span>Curl</span>
+        </label>
+      </div>
+    </fieldset>
+    <canvas id="book-canvas" class="stage" content="drawable">
+      <main class="book" drawable aria-label="WebBook 3D Reader"></main>
+    </canvas>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

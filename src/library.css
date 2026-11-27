@@ -1,0 +1,127 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100dvh;
+  background: #1a1917;
+  color: #f6f3ec;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow-y: auto;
+}
+
+.library-header {
+  padding: clamp(28px, 5vw, 52px) clamp(20px, 5vw, 48px) 16px;
+  border-bottom: 1px solid rgba(253, 251, 247, 0.1);
+}
+
+.library-header__inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.library-header__title {
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fdfbf7;
+}
+
+.library-header__subtitle {
+  margin-top: 8px;
+  max-width: 62ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(246, 243, 236, 0.74);
+}
+
+.library {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px) 64px;
+}
+
+.shelf {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
+  gap: 28px;
+}
+
+.book-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(253, 251, 247, 0.12);
+  border-radius: 12px;
+  background: rgba(34, 32, 29, 0.72);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.book-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(253, 251, 247, 0.28);
+  background: rgba(42, 39, 35, 0.9);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+}
+
+.book-card:focus-visible {
+  outline: 2px solid #c84b31;
+  outline-offset: 3px;
+}
+
+.book-card__cover {
+  aspect-ratio: var(--book-aspect, 2115 / 2990);
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fdfbf7;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 10px 24px -4px rgba(0, 0, 0, 0.5);
+}
+
+.book-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.book-card__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fdfbf7;
+}
+
+.book-card__subtitle {
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(246, 243, 236, 0.72);
+}
+
+.book-card__pages {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(246, 243, 236, 0.58);
+}
