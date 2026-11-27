@@ -1,7 +1,13 @@
 import coneVertSource from "../shaders/cone.vert.glsl?raw";
 import pageFragSource from "../shaders/page.frag.glsl?raw";
 import { createPageModelMatrix, createPerspectiveViewMatrix, multiplyMat4 } from "./camera";
-import { HALF_PI, coneParams, turnOpacity } from "./coneMath";
+import {
+  HALF_PI,
+  coneParams,
+  cylKappa,
+  pointerYToConicContribution,
+  turnOpacity,
+} from "./coneMath";
 import { createGeometrySync } from "./geometrySync";
 import { createPlaneMesh } from "./planeGeometry";
 import { createPageTextureManager } from "./textures";
@@ -26,6 +32,7 @@ type ReaderMode = "curl" | "slide" | "stack";
 const EPS = 1e-4;
 const PROGRESS_CHANGE_EPS = 1e-5;
 const LIGHT_CHANGE_EPS = 1e-5;
+const CONIC_CHANGE_EPS = 1e-5;
 
 function compileShader(gl: WebGL2RenderingContext, type: GLenum, source: string): WebGLShader {
   const shader = gl.createShader(type);
@@ -116,6 +123,9 @@ export function initBookRenderer(
   const uTheta = gl.getUniformLocation(program, "u_theta");
   const uAy = gl.getUniformLocation(program, "u_Ay");
   const uRho = gl.getUniformLocation(program, "u_rho");
+  const uConicContribution = gl.getUniformLocation(program, "u_conicContribution");
+  const uCylKappa = gl.getUniformLocation(program, "u_cylKappa");
+  const uPageHeight = gl.getUniformLocation(program, "u_pageHeight");
   const uZBias = gl.getUniformLocation(program, "u_zBias");
   const uLightPos = gl.getUniformLocation(program, "u_lightPos");
 
@@ -129,6 +139,10 @@ export function initBookRenderer(
   }));
 
   let lightPos: Vec3 = options?.lightPos ?? DEFAULT_LIGHT_POS;
+  let activeConicContribution = 1;
+  let lastConicContribution = 1;
+  let pendingConicContribution: number | null = null;
+  let activeTurnPage = -1;
   let needsResizeTextureCheck = true;
   let textureDirty = true;
   let resizeDirty = true;
@@ -151,6 +165,8 @@ export function initBookRenderer(
     theta: number,
     Ay: number,
     rho: number,
+    conicContribution: number,
+    cylKappaValue: number,
     zBias: number,
   ): void {
     gl.uniformMatrix4fv(uMvp, false, mvp);
@@ -159,6 +175,8 @@ export function initBookRenderer(
     gl.uniform1f(uTheta, theta);
     gl.uniform1f(uAy, Ay);
     gl.uniform1f(uRho, rho);
+    gl.uniform1f(uConicContribution, conicContribution);
+    gl.uniform1f(uCylKappa, cylKappaValue);
     gl.uniform1f(uZBias, zBias);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.drawElements(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_SHORT, 0);
@@ -211,6 +229,43 @@ export function initBookRenderer(
       }
     }
 
+    let settledIdx = -1;
+    let turningIdx = -1;
+    let underIdx = -1;
+    if (mode === "curl") {
+      for (let i = 0; i < pageEntries.length; i += 1) {
+        const p = progressScratch[i];
+        if (Math.abs(p) <= EPS) {
+          settledIdx = i;
+        } else if (p > EPS && p < 1 - EPS) {
+          turningIdx = i;
+        } else if (p < -EPS && p > -1 + EPS) {
+          underIdx = i;
+        }
+      }
+
+      if (turningIdx !== -1) {
+        if (activeTurnPage === -1) {
+          activeConicContribution = pendingConicContribution ?? 1;
+          pendingConicContribution = null;
+          activeTurnPage = turningIdx;
+        } else if (turningIdx !== activeTurnPage) {
+          if (pendingConicContribution !== null) {
+            activeConicContribution = pendingConicContribution;
+            pendingConicContribution = null;
+          }
+          activeTurnPage = turningIdx;
+        }
+      } else if (underIdx === -1) {
+        activeTurnPage = -1;
+      }
+    } else {
+      activeTurnPage = -1;
+    }
+
+    const conicChanged =
+      Math.abs(activeConicContribution - lastConicContribution) > CONIC_CHANGE_EPS;
+
     let layoutSignature = "";
     let centeredRect: DOMRect | null = null;
     const flatVisiblePages: Array<{
@@ -244,7 +299,13 @@ export function initBookRenderer(
 
     const layoutChanged = layoutSignature !== lastLayoutSignature;
     const shouldDraw =
-      textureDirty || resizeDirty || lightDirty || modeChanged || progressChanged || layoutChanged;
+      textureDirty ||
+      resizeDirty ||
+      lightDirty ||
+      modeChanged ||
+      progressChanged ||
+      conicChanged ||
+      layoutChanged;
 
     if (!shouldDraw) {
       if (settleFramesRemaining > 0) {
@@ -258,6 +319,7 @@ export function initBookRenderer(
     resizeDirty = false;
     lightDirty = false;
     lastMode = mode;
+    lastConicContribution = activeConicContribution;
     lastLayoutSignature = layoutSignature;
     lastProgress.set(progressScratch);
 
@@ -280,26 +342,12 @@ export function initBookRenderer(
     gl.bindVertexArray(mesh.vao);
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform1i(uPageTex, 0);
+    gl.uniform1f(uPageHeight, mesh.height);
     gl.uniform3f(uLightPos, lightPos[0], lightPos[1], lightPos[2]);
 
     const vpMatrix = createPerspectiveViewMatrix(canvasRect.width, canvasRect.height);
 
     if (mode === "curl" && centeredRect) {
-      let settledIdx = -1;
-      let turningIdx = -1;
-      let underIdx = -1;
-
-      for (let i = 0; i < pageEntries.length; i += 1) {
-        const p = progressScratch[i];
-        if (Math.abs(p) <= EPS) {
-          settledIdx = i;
-        } else if (p > EPS && p < 1 - EPS) {
-          turningIdx = i;
-        } else if (p < -EPS && p > -1 + EPS) {
-          underIdx = i;
-        }
-      }
-
       const activeIdx =
         settledIdx !== -1
           ? settledIdx
@@ -332,7 +380,7 @@ export function initBookRenderer(
         if (baseIdx !== -1) {
           const baseTex = textureManager.getTexture(pageEntries[baseIdx].content);
           if (baseTex) {
-            drawPageMesh(mvpScratch, centeredModel, baseTex, 1, HALF_PI, -1.0, 0, -0.002);
+            drawPageMesh(mvpScratch, centeredModel, baseTex, 1, HALF_PI, -1.0, 0, 1, 0, -0.002);
           }
         }
         if (turningIdx !== -1) {
@@ -340,13 +388,24 @@ export function initBookRenderer(
           if (turnTex) {
             const p = progressScratch[turningIdx];
             const { theta, Ay, rho } = coneParams(p);
-            drawPageMesh(mvpScratch, centeredModel, turnTex, turnOpacity(p), theta, Ay, rho, 0);
+            drawPageMesh(
+              mvpScratch,
+              centeredModel,
+              turnTex,
+              turnOpacity(p),
+              theta,
+              Ay,
+              rho,
+              activeConicContribution,
+              cylKappa(p),
+              0,
+            );
           }
         }
       } else if (settledIdx !== -1) {
         const settledTex = textureManager.getTexture(pageEntries[settledIdx].content);
         if (settledTex) {
-          drawPageMesh(mvpScratch, centeredModel, settledTex, 1, HALF_PI, -1.0, 0, 0);
+          drawPageMesh(mvpScratch, centeredModel, settledTex, 1, HALF_PI, -1.0, 0, 1, 0, 0);
         }
       }
     } else {
@@ -372,7 +431,7 @@ export function initBookRenderer(
         }
         const modelMatrix = createPageModelMatrix(rect, canvasRect, mesh.width, mesh.height);
         multiplyMat4(vpMatrix, modelMatrix, mvpScratch);
-        drawPageMesh(mvpScratch, modelMatrix, texture, opacity, HALF_PI, -1.0, 0, 0);
+        drawPageMesh(mvpScratch, modelMatrix, texture, opacity, HALF_PI, -1.0, 0, 1, 0, 0);
       }
     }
 
@@ -399,6 +458,20 @@ export function initBookRenderer(
     scheduleRender();
   }
 
+  function onPointerDown(event: PointerEvent): void {
+    if (event.pointerType === "mouse") {
+      return;
+    }
+    const canvasRect = canvas.getBoundingClientRect();
+    const sampleRect = pageEntries[0].frame.getBoundingClientRect();
+    const pageTop = canvasRect.top + (canvasRect.height - sampleRect.height) * 0.5;
+    pendingConicContribution = pointerYToConicContribution(
+      event.clientY,
+      pageTop,
+      sampleRect.height,
+    );
+  }
+
   updateCanvasSize();
 
   const resizeObserver = new ResizeObserver(() => {
@@ -409,6 +482,7 @@ export function initBookRenderer(
   });
   resizeObserver.observe(canvas);
   canvas.addEventListener("paint", onPaint);
+  book.addEventListener("pointerdown", onPointerDown, { passive: true });
 
   canvas.requestPaint?.();
   scheduleRender();
@@ -442,6 +516,7 @@ export function initBookRenderer(
       }
       resizeObserver.disconnect();
       canvas.removeEventListener("paint", onPaint);
+      book.removeEventListener("pointerdown", onPointerDown);
       textureManager.dispose();
       mesh.dispose();
       gl.deleteProgram(program);
