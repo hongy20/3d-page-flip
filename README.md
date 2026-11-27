@@ -1,20 +1,20 @@
 # Dropp
 
-A browser e-book reader proof of concept where native CSS scrolling drives all pagination physics and a WebGL2 HTML-in-Canvas overlay renders live HTML/SVG pages deformed by the Hong, Card & Chen cone page-curl model.
+A lightweight, functional browser e-book reader built with vanilla TypeScript and zero frameworks, featuring realistic 3D page-curl animation powered by native CSS scroll-snap and Chrome HTML-in-Canvas WebGL2.
 
-## What It Does
+## Overview
 
-- **Zero-JS scroll physics**: Horizontal pagination (`scroll-snap-type: x mandatory`) uses native browser touch, trackpad, wheel, and keyboard scrolling.
-- **Declarative CSS scroll state**: Each page exposes a normalized `--progress` custom property in `[-1, 1]` via CSS `view(inline)` scroll-driven timelines, powering pure-CSS `Slide` and `Stack` modes as well as WebGL uniforms.
-- **Live HTML-in-Canvas 3D curl**: `<canvas content="drawable">` uploads live DOM page elements via `texElementSubImage2D` onto a `64x64` tessellated plane deformed with the Hong, Card & Chen cone vertex shader (`Curl` mode).
+- **Vanilla TypeScript, no frameworks**: Built directly on standard browser APIs, CSS, and WebGL2 with zero runtime dependencies.
+- **Lightweight functional reader**: Browse a static book library, turn pages smoothly across `Slide`, `Stack`, and 3D `Curl` modes, navigate native inline SVG links, and zoom/pan cleanly (see [`openspec/`](openspec/) for planned and active features).
+- **Spec-driven & vibe-coded**: All behavior is authored and tracked through [OpenSpec](openspec/) specifications with a minimal CI setup (`oxlint`, `oxfmt`, `vitest`, TypeScript + Vite build, and automated GitHub Pages deployment).
 
 ## Browser Requirements
 
-- **Chrome 158+** with `chrome://flags/#canvas-draw-element` enabled.
+- **Chrome 157+** (ships HTML-in-Canvas enabled by default; no flags required).
 
 ## Local Setup
 
-Requires **Node.js 24 LTS** (see [`.nvmrc`](.nvmrc)):
+Requires **Node.js 26 LTS** (see [`.nvmrc`](.nvmrc)):
 
 ```sh
 nvm use
@@ -33,14 +33,21 @@ Available scripts:
 ## Repository Structure
 
 ```text
-├── .github/workflows/ci.yml  # CI checks (lint, format, test, build)
-├── index.html                # Scrollable book container, controls, and drawable canvas
-├── public/pages/             # Static vector book pages (page_1.svg .. page_18.svg)
+├── .github/workflows/
+│   ├── ci.yml                # CI checks (lint, format, test, build)
+│   └── deploy.yml            # GitHub Pages build & deployment
+├── index.html                # Book library shelf landing page
+├── reader.html               # E-book reader scroller & drawable WebGL canvas
+├── public/books/malaga/      # Static vector book pages (page_1.svg .. page_18.svg)
 ├── src/
-│   ├── main.ts               # Entry point
-│   ├── style.css             # Layout, scroll-snap, view(inline) timelines, modes
-│   ├── gl/                   # WebGL2 renderer, HTML-in-Canvas texture/geometry sync, cone math
-│   └── shaders/              # GLSL ES 3.00 cone vertex & fragment shaders
+│   ├── books/catalog.ts      # Static book catalog manifest & lookup
+│   ├── library.ts            # Library shelf entry point
+│   ├── library.css           # Library shelf styling
+│   ├── main.ts               # Reader entry point
+│   ├── style.css             # Reader layout, scroll-snap, view(inline) timelines, modes
+│   ├── svgLoader.ts          # Base-aware inline SVG loader & ID/style scoping
+│   ├── gl/                   # WebGL2 renderer, HTML-in-Canvas texture/geometry sync, curl math
+│   └── shaders/              # GLSL ES 3.00 curl vertex & fragment shaders
 └── openspec/
     ├── specs/                # Synced capability specifications
     └── changes/              # Proposed and archived OpenSpec changes
@@ -51,10 +58,10 @@ Available scripts:
 All behavior is specified under [`openspec/`](openspec/):
 
 - [`openspec/specs/`](openspec/specs/) — synced capability specs:
+  - [`book-library`](openspec/specs/book-library/spec.md)
   - [`book-scroller`](openspec/specs/book-scroller/spec.md)
   - [`css-scroll-state`](openspec/specs/css-scroll-state/spec.md)
   - [`webgl-html-in-canvas`](openspec/specs/webgl-html-in-canvas/spec.md)
   - [`cone-page-curl`](openspec/specs/cone-page-curl/spec.md)
   - [`project-tooling`](openspec/specs/project-tooling/spec.md)
-
-AI agents: read [`AGENTS.md`](AGENTS.md) first.
+  - [`public-demo-deployment`](openspec/specs/public-demo-deployment/spec.md)

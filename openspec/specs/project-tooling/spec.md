@@ -6,14 +6,14 @@ Defines repository-level Node.js version locking, Oxlint/Oxfmt code quality chec
 
 ## Requirements
 
-### Requirement: Locked Node.js 24 LTS version
+### Requirement: Locked Node.js 26 LTS version
 
-The repository SHALL lock the Node.js runtime version to Node.js 24 LTS via `.nvmrc` (`24`) and `package.json` `engines.node` (`>=24 <25`).
+The repository SHALL lock the Node.js runtime version to Node.js 26 LTS via `.nvmrc` (`26`) and `package.json` `engines.node` (`>=26 <27`).
 
-#### Scenario: Version files declare Node.js 24 LTS consistently
+#### Scenario: Version files declare Node.js 26 LTS consistently
 
 - **WHEN** `.nvmrc` and `package.json` are inspected
-- **THEN** `.nvmrc` specifies `24` and `package.json` `engines.node` targets Node 24 LTS
+- **THEN** `.nvmrc` specifies `26` and `package.json` `engines.node` targets Node 26 LTS
 
 ### Requirement: Oxlint and Oxfmt code quality tooling
 
@@ -31,13 +31,13 @@ A GitHub Actions workflow at `.github/workflows/ci.yml` SHALL run on pushes to `
 #### Scenario: CI workflow enforces lint, format, test, and build
 
 - **WHEN** `.github/workflows/ci.yml` is inspected or triggered on GitHub Actions
-- **THEN** it installs dependencies with `npm ci` on Node 24 and runs `lint`, `format:check`, `test`, and `build`
+- **THEN** it installs dependencies with `npm ci` on Node 26 and runs `lint`, `format:check`, `test`, and `build`
 
 ### Requirement: Concise project README with spec links
 
-`README.md` SHALL provide a concise description of Dropp, what it does, local setup and repository structure, and links to `openspec/specs/` and `openspec/`, without project-progress or status tracking.
+`README.md` SHALL describe Dropp as a lightweight, functional e-book reader built with vanilla TypeScript and zero frameworks or runtime dependencies (supporting page turning, zoom, spec-driven development, vibe-coded workflow, and minimal CI), state **Chrome 157+** with no experimental flag instructions, omit Hong–Card–Chen citations and project-progress tracking, and document accurate local setup, repository structure, and links to `openspec/specs/` and `openspec/`.
 
 #### Scenario: README documents project overview, setup, structure, and spec links
 
 - **WHEN** `README.md` is read
-- **THEN** it explains the project, setup, and directory layout with links to `openspec/` and `openspec/specs/`, and omits project progress status text
+- **THEN** it presents the vanilla TypeScript overview, Chrome 157+ requirement without flags, accurate repository layout, and links to `openspec/` and `openspec/specs/`, without academic curl citations or progress tracking
