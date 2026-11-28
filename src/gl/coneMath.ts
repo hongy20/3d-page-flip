@@ -145,6 +145,88 @@ export function deformVertexCurl(
   ];
 }
 
+/**
+ * Top-hinge (`y = pageHeight`) Hong, Card & Chen cone curl lifting the lower-right corner.
+ */
+export function deformVertexTopHingeCone(
+  px: number,
+  py: number,
+  theta: number,
+  Ay: number,
+  rho: number,
+  pageWidth = PAGE_ASPECT,
+  pageHeight = 1,
+): Vec3Tuple {
+  const [tx, ty, tz] = deformVertexCone(pageHeight - py, pageWidth - px, theta, Ay, rho);
+  return [pageWidth - ty, pageHeight - tx, tz];
+}
+
+/**
+ * Horizontally reflected top-hinge cone curl lifting the lower-left corner.
+ */
+export function deformVertexTopHingeLeftCone(
+  px: number,
+  py: number,
+  theta: number,
+  Ay: number,
+  rho: number,
+  pageWidth = PAGE_ASPECT,
+  pageHeight = 1,
+): Vec3Tuple {
+  const [tx, ty, tz] = deformVertexTopCone(
+    pageHeight - py,
+    pageWidth - px,
+    theta,
+    Ay,
+    rho,
+    pageWidth,
+  );
+  return [pageWidth - ty, pageHeight - tx, tz];
+}
+
+/**
+ * Top-hinge (`y = pageHeight`) isometric cylinder curl rolling the page upward/downward.
+ */
+export function deformVertexTopHingeCylinder(
+  px: number,
+  py: number,
+  kappa: number,
+  rho: number,
+  pageWidth = PAGE_ASPECT,
+  pageHeight = 1,
+): Vec3Tuple {
+  const [tx, ty, tz] = deformVertexCylinder(pageHeight - py, pageWidth - px, kappa, rho);
+  return [pageWidth - ty, pageHeight - tx, tz];
+}
+
+/**
+ * Continuous top-hinge curl blend between lower-left cone (`-1`), horizontal cylinder (`0`),
+ * and lower-right cone (`+1`) for vertical page layout.
+ */
+export function deformVertexVerticalCurl(
+  px: number,
+  py: number,
+  theta: number,
+  Ay: number,
+  rho: number,
+  kappa: number,
+  conicContribution: number,
+  pageWidth = PAGE_ASPECT,
+  pageHeight = 1,
+): Vec3Tuple {
+  const [tx, ty, tz] = deformVertexCurl(
+    pageHeight - py,
+    pageWidth - px,
+    theta,
+    Ay,
+    rho,
+    kappa,
+    conicContribution,
+    pageWidth,
+  );
+  return [pageWidth - ty, pageHeight - tx, tz];
+}
+
 const CREASE_SAMPLES = 24;
 const SOLVE_ITERS = 20;
 
@@ -217,28 +299,29 @@ function rhoCurve(t: number): number {
   return HALF_PI + HALF_PI * (u * u * (3 - 2 * u));
 }
 
-function solveBaseConeParams(t: number, pageWidth: number): ConeParams {
+function solveBaseConeParams(t: number, pageWidth: number, hingeSpan = 1): ConeParams {
   const Ay = -(0.35 + 0.15 * t + 14.5 * Math.pow(t, 8));
   const rho = rhoCurve(t);
   let theta = HALF_PI;
 
   if (t > 0 && t < CREASE_SWEEP_END) {
+    const midSpan = hingeSpan * 0.5;
     const targetX = pageWidth * targetCreaseNorm(t);
     const maxAlpha = Math.asin(clamp(pageWidth / Math.hypot(pageWidth, -Ay), -1, 1));
     const minSafeTheta = Math.max(
       THETA_MIN + 1e-4,
       Math.asin(Math.min(1, maxAlpha / (0.88 * Math.PI))),
     );
-    if (maxConeCreaseX(HALF_PI, Ay, rho, pageWidth, 0.5) <= targetX) {
+    if (maxConeCreaseX(HALF_PI, Ay, rho, pageWidth, midSpan) <= targetX) {
       theta = HALF_PI;
-    } else if (maxConeCreaseX(minSafeTheta, Ay, rho, pageWidth, 0.5) >= targetX) {
+    } else if (maxConeCreaseX(minSafeTheta, Ay, rho, pageWidth, midSpan) >= targetX) {
       theta = minSafeTheta;
     } else {
       let lo = minSafeTheta;
       let hi = HALF_PI;
       for (let it = 0; it < SOLVE_ITERS; it += 1) {
         const mid = 0.5 * (lo + hi);
-        if (maxConeCreaseX(mid, Ay, rho, pageWidth, 0.5) < targetX) {
+        if (maxConeCreaseX(mid, Ay, rho, pageWidth, midSpan) < targetX) {
           lo = mid;
         } else {
           hi = mid;
@@ -283,24 +366,37 @@ function applyCornerBend(
  * across `[pageWidth, 0]` over `|p| in [0, CREASE_SWEEP_END]` while keeping deep
  * paper curl early, with optional `cornerBend in [0, 1]` tightening the grabbed corner.
  */
-export function coneParams(p: number, pageWidth = PAGE_ASPECT, cornerBend = 0): ConeParams {
+export function coneParams(
+  p: number,
+  pageWidth = PAGE_ASPECT,
+  cornerBend = 0,
+  hingeSpan = 1,
+): ConeParams {
   const t = Number.isFinite(p) ? clamp(Math.abs(p), 0, 1) : 0;
   const safeWidth = Number.isFinite(pageWidth) && pageWidth > 0 ? pageWidth : PAGE_ASPECT;
-  return applyCornerBend(solveBaseConeParams(t, safeWidth), t, safeWidth, cornerBend);
+  const safeHingeSpan = Number.isFinite(hingeSpan) && hingeSpan > 0 ? hingeSpan : 1;
+  return applyCornerBend(
+    solveBaseConeParams(t, safeWidth, safeHingeSpan),
+    t,
+    safeWidth,
+    cornerBend,
+  );
 }
 
 /**
  * Maps normalized CSS `--progress` `p in [-1, 1]` to cylinder curvature `kappa >= 0`
  * aligned with the calibrated crease trajectory.
  */
-export function cylKappa(p: number, pageWidth = PAGE_ASPECT): number {
+export function cylKappa(p: number, pageWidth = PAGE_ASPECT, hingeSpan = 1): number {
   const t = Number.isFinite(p) ? clamp(Math.abs(p), 0, 1) : 0;
   if (t === 0 || t >= CREASE_SWEEP_END) {
     return 0;
   }
-  const { theta, Ay, rho } = coneParams(t, pageWidth);
-  const targetX = maxConeCreaseX(theta, Ay, rho, pageWidth, 0.5);
-  const flatX = pageWidth * Math.cos(rho);
+  const safeWidth = Number.isFinite(pageWidth) && pageWidth > 0 ? pageWidth : PAGE_ASPECT;
+  const safeHingeSpan = Number.isFinite(hingeSpan) && hingeSpan > 0 ? hingeSpan : 1;
+  const { theta, Ay, rho } = coneParams(t, safeWidth, 0, safeHingeSpan);
+  const targetX = maxConeCreaseX(theta, Ay, rho, safeWidth, safeHingeSpan * 0.5);
+  const flatX = safeWidth * Math.cos(rho);
   if (targetX >= flatX - 1e-5) {
     return 0;
   }
@@ -308,7 +404,7 @@ export function cylKappa(p: number, pageWidth = PAGE_ASPECT): number {
   let hi = CYL_KAPPA_MAX;
   for (let it = 0; it < SOLVE_ITERS; it += 1) {
     const mid = 0.5 * (lo + hi);
-    if (maxCylCreaseX(mid, rho, pageWidth) > targetX) {
+    if (maxCylCreaseX(mid, rho, safeWidth) > targetX) {
       lo = mid;
     } else {
       hi = mid;
@@ -338,6 +434,28 @@ export function pointerYToConicContribution(
   return 2 * yNorm - 1;
 }
 
+/**
+ * Maps a pointer gesture's horizontal start coordinate inside a page rect to
+ * `conicContribution in [-1, 1]` (`-1` left edge, `0` center, `+1` right edge)
+ * for vertical top-hinge curl.
+ */
+export function pointerXToConicContribution(
+  clientX: number,
+  rectLeft: number,
+  rectWidth: number,
+): number {
+  if (
+    !Number.isFinite(clientX) ||
+    !Number.isFinite(rectLeft) ||
+    !Number.isFinite(rectWidth) ||
+    rectWidth <= 0
+  ) {
+    return 1;
+  }
+  const xNorm = clamp((clientX - rectLeft) / rectWidth, 0, 1);
+  return 2 * xNorm - 1;
+}
+
 const VERTICAL_SOLVE_ITERS = 18;
 
 function evalCurlYAtControl(
@@ -347,17 +465,21 @@ function evalCurlYAtControl(
   base: ConeParams,
   v: number,
   pageWidth: number,
+  pageHeight: number,
 ): number {
   const c = clamp(v, -1, 1);
   const bend = clamp(Math.abs(v) - 1, 0, 1);
   const { theta, Ay } = applyCornerBend(base, t, pageWidth, bend);
-  const coneY = c < 0 ? 1 - coneLocal(px, 1 - py, theta, Ay)[1] : coneLocal(px, py, theta, Ay)[1];
+  const coneY =
+    c < 0
+      ? pageHeight - coneLocal(px, pageHeight - py, theta, Ay)[1]
+      : coneLocal(px, py, theta, Ay)[1];
   return py + (coneY - py) * Math.abs(c);
 }
 
 /**
  * Solves `(conicContribution, cornerBend)` so a grabbed page-local point `(grabX, grabY)`
- * tracks upward vertical pointer displacement `deltaYUp` monotonically as closely as the
+ * tracks transverse pointer displacement `deltaYUp` monotonically as closely as the
  * cone and cylinder models allow, saturating at the cone's geometric bending limit.
  */
 export function solveVerticalCurlControl(
@@ -366,20 +488,39 @@ export function solveVerticalCurlControl(
   grabY: number,
   deltaYUp: number,
   pageWidth = PAGE_ASPECT,
+  pageHeight = 1,
 ): VerticalCurlControl {
   const t = Number.isFinite(p) ? clamp(Math.abs(p), 0, 1) : 0;
   const safeWidth = Number.isFinite(pageWidth) && pageWidth > 0 ? pageWidth : PAGE_ASPECT;
-  const safeGrabY = Number.isFinite(grabY) ? clamp(grabY, 0, 1) : 0;
+  const safeHeight = Number.isFinite(pageHeight) && pageHeight > 0 ? pageHeight : 1;
+  const safeGrabY = Number.isFinite(grabY) ? clamp(grabY, 0, safeHeight) : 0;
   const safeDeltaY = Number.isFinite(deltaYUp) ? deltaYUp : 0;
   const pxRef = Math.max(
     Number.isFinite(grabX) ? clamp(grabX, 0, safeWidth) : safeWidth,
     0.25 * safeWidth,
   );
-  const vStart = 1 - 2 * safeGrabY;
-  const base = solveBaseConeParams(t, safeWidth);
+  const vStart = 1 - 2 * (safeGrabY / safeHeight);
+  const base = solveBaseConeParams(t, safeWidth, safeHeight);
+  const resistanceScale = VERTICAL_RESISTANCE_SCALE * safeHeight;
 
-  const yMin = evalCurlYAtControl(pxRef, safeGrabY, t, base, -MAX_VERTICAL_CURL_CONTROL, safeWidth);
-  const yMax = evalCurlYAtControl(pxRef, safeGrabY, t, base, MAX_VERTICAL_CURL_CONTROL, safeWidth);
+  const yMin = evalCurlYAtControl(
+    pxRef,
+    safeGrabY,
+    t,
+    base,
+    -MAX_VERTICAL_CURL_CONTROL,
+    safeWidth,
+    safeHeight,
+  );
+  const yMax = evalCurlYAtControl(
+    pxRef,
+    safeGrabY,
+    t,
+    base,
+    MAX_VERTICAL_CURL_CONTROL,
+    safeWidth,
+    safeHeight,
+  );
 
   let v: number;
   if (Math.abs(safeDeltaY) <= 1e-9) {
@@ -388,17 +529,16 @@ export function solveVerticalCurlControl(
     const vSpan =
       safeDeltaY >= 0 ? MAX_VERTICAL_CURL_CONTROL - vStart : vStart + MAX_VERTICAL_CURL_CONTROL;
     v = clamp(
-      vStart +
-        Math.sign(safeDeltaY) * vSpan * Math.tanh(Math.abs(safeDeltaY) / VERTICAL_RESISTANCE_SCALE),
+      vStart + Math.sign(safeDeltaY) * vSpan * Math.tanh(Math.abs(safeDeltaY) / resistanceScale),
       -MAX_VERTICAL_CURL_CONTROL,
       MAX_VERTICAL_CURL_CONTROL,
     );
   } else {
-    const yBase = evalCurlYAtControl(pxRef, safeGrabY, t, base, vStart, safeWidth);
+    const yBase = evalCurlYAtControl(pxRef, safeGrabY, t, base, vStart, safeWidth, safeHeight);
     const span = safeDeltaY >= 0 ? yMax - yBase : yBase - yMin;
     const effDeltaY =
       span > 1e-6
-        ? Math.sign(safeDeltaY) * span * Math.tanh(Math.abs(safeDeltaY) / VERTICAL_RESISTANCE_SCALE)
+        ? Math.sign(safeDeltaY) * span * Math.tanh(Math.abs(safeDeltaY) / resistanceScale)
         : 0;
     const yTarget = yBase + effDeltaY;
     if (yTarget <= yMin) {
@@ -410,7 +550,7 @@ export function solveVerticalCurlControl(
       let hi = MAX_VERTICAL_CURL_CONTROL;
       for (let it = 0; it < VERTICAL_SOLVE_ITERS; it += 1) {
         const mid = 0.5 * (lo + hi);
-        if (evalCurlYAtControl(pxRef, safeGrabY, t, base, mid, safeWidth) < yTarget) {
+        if (evalCurlYAtControl(pxRef, safeGrabY, t, base, mid, safeWidth, safeHeight) < yTarget) {
           lo = mid;
         } else {
           hi = mid;

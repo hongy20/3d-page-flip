@@ -14,8 +14,13 @@ import {
   deformVertexCurl,
   deformVertexCylinder,
   deformVertexTopCone,
+  deformVertexTopHingeCone,
+  deformVertexTopHingeCylinder,
+  deformVertexTopHingeLeftCone,
+  deformVertexVerticalCurl,
   maxConeCreaseX,
   maxCylCreaseX,
+  pointerXToConicContribution,
   pointerYToConicContribution,
   solveVerticalCurlControl,
   targetCreaseNorm,
@@ -592,5 +597,308 @@ describe("cornerBend and solveVerticalCurlControl", () => {
     const flat = solveVerticalCurlControl(0, Number.NaN, Number.NaN, Number.NaN);
     expect(Number.isFinite(flat.conicContribution)).toBe(true);
     expect(Number.isFinite(flat.cornerBend)).toBe(true);
+  });
+});
+
+describe("top-hinge vertical layout curl", () => {
+  const grid = sampleGrid(10);
+
+  it("maps horizontal pointer coordinates continuously to [-1, 1] with safe fallback", () => {
+    expect(pointerXToConicContribution(100, 100, 400)).toBe(-1);
+    expect(pointerXToConicContribution(200, 100, 400)).toBe(-0.5);
+    expect(pointerXToConicContribution(300, 100, 400)).toBe(0);
+    expect(pointerXToConicContribution(400, 100, 400)).toBe(0.5);
+    expect(pointerXToConicContribution(500, 100, 400)).toBe(1);
+
+    expect(pointerXToConicContribution(50, 100, 400)).toBe(-1);
+    expect(pointerXToConicContribution(600, 100, 400)).toBe(1);
+
+    expect(pointerXToConicContribution(200, 100, 0)).toBe(1);
+    expect(pointerXToConicContribution(200, 100, -10)).toBe(1);
+    expect(pointerXToConicContribution(Number.NaN, 100, 400)).toBe(1);
+  });
+
+  it("preserves exact isometric distance and flat/flipped endpoints for top-hinge right cone", () => {
+    const thetas = [0.3, 0.7, 1.1, HALF_PI];
+    const ays = [AY_START, -1.5, AY_END, -100];
+    const rhos = [0, 0.5, HALF_PI, 2.4, Math.PI];
+
+    for (const theta of thetas) {
+      for (const Ay of ays) {
+        const apexX = PAGE_ASPECT - Ay;
+        for (const rho of rhos) {
+          for (const [px, py] of grid) {
+            const [vx, vy, vz] = deformVertexTopHingeCone(px, py, theta, Ay, rho);
+            expect(Number.isFinite(vx)).toBe(true);
+            expect(Number.isFinite(vy)).toBe(true);
+            expect(Number.isFinite(vz)).toBe(true);
+
+            const expectedR = Math.hypot(px - apexX, py - 1);
+            const actualR = Math.hypot(vx - apexX, vy - 1, vz);
+            expect(actualR).toBeCloseTo(expectedR, 11);
+          }
+        }
+      }
+    }
+
+    for (const [px, py] of grid) {
+      const [rx, ry, rz] = deformVertexTopHingeCone(px, py, HALF_PI, AY_START, 0);
+      expect(rx).toBeCloseTo(px, 12);
+      expect(ry).toBeCloseTo(py, 12);
+      expect(rz).toBeCloseTo(0, 12);
+
+      const [fx, fy, fz] = deformVertexTopHingeCone(px, py, HALF_PI, AY_START, Math.PI);
+      expect(fx).toBeCloseTo(px, 12);
+      expect(fy).toBeCloseTo(2 - py, 12);
+      expect(fz).toBeCloseTo(0, 12);
+    }
+
+    const { theta, Ay, rho } = coneParams(0.35, 1, 0, PAGE_ASPECT);
+    const bottomRight = deformVertexTopHingeCone(PAGE_ASPECT, 0, theta, Ay, rho);
+    const bottomLeft = deformVertexTopHingeCone(0, 0, theta, Ay, rho);
+    expect(bottomRight[2]).toBeGreaterThan(bottomLeft[2]);
+  });
+
+  it("preserves exact isometric distance and flat/flipped endpoints for top-hinge left cone", () => {
+    const thetas = [0.3, 0.7, 1.1, HALF_PI];
+    const ays = [AY_START, -1.5, AY_END, -100];
+    const rhos = [0, 0.5, HALF_PI, 2.4, Math.PI];
+
+    for (const theta of thetas) {
+      for (const Ay of ays) {
+        for (const rho of rhos) {
+          for (const [px, py] of grid) {
+            const [vx, vy, vz] = deformVertexTopHingeLeftCone(px, py, theta, Ay, rho);
+            expect(Number.isFinite(vx)).toBe(true);
+            expect(Number.isFinite(vy)).toBe(true);
+            expect(Number.isFinite(vz)).toBe(true);
+
+            const expectedR = Math.hypot(px - Ay, py - 1);
+            const actualR = Math.hypot(vx - Ay, vy - 1, vz);
+            expect(actualR).toBeCloseTo(expectedR, 11);
+          }
+        }
+      }
+    }
+
+    for (const [px, py] of grid) {
+      const [rx, ry, rz] = deformVertexTopHingeLeftCone(px, py, HALF_PI, AY_START, 0);
+      expect(rx).toBeCloseTo(px, 12);
+      expect(ry).toBeCloseTo(py, 12);
+      expect(rz).toBeCloseTo(0, 12);
+
+      const [fx, fy, fz] = deformVertexTopHingeLeftCone(px, py, HALF_PI, AY_START, Math.PI);
+      expect(fx).toBeCloseTo(px, 12);
+      expect(fy).toBeCloseTo(2 - py, 12);
+      expect(fz).toBeCloseTo(0, 12);
+    }
+
+    const { theta, Ay, rho } = coneParams(0.35, 1, 0, PAGE_ASPECT);
+    const bottomLeft = deformVertexTopHingeLeftCone(0, 0, theta, Ay, rho);
+    const bottomRight = deformVertexTopHingeLeftCone(PAGE_ASPECT, 0, theta, Ay, rho);
+    expect(bottomLeft[2]).toBeGreaterThan(bottomRight[2]);
+  });
+
+  it("preserves exact cylinder radius and vertical arc-length isometry for top-hinge cylinder", () => {
+    const kappas = [0.2, 0.9, 1.5, CYL_KAPPA_MAX];
+    const rhos = [0, 0.4, HALF_PI, 2.5, Math.PI];
+
+    for (const k of kappas) {
+      const radius = 1 / k;
+      for (const rho of rhos) {
+        const cosRho = Math.cos(rho);
+        const sinRho = Math.sin(rho);
+        const cy = 1 + sinRho * radius;
+        const cz = cosRho * radius;
+
+        for (const [px, py] of grid) {
+          const [vx, vy, vz] = deformVertexTopHingeCylinder(px, py, k, rho);
+          expect(Number.isFinite(vx)).toBe(true);
+          expect(Number.isFinite(vy)).toBe(true);
+          expect(Number.isFinite(vz)).toBe(true);
+          expect(vx).toBeCloseTo(px, 12);
+
+          const distToAxis = Math.hypot(vx - px, vy - cy, vz - cz);
+          expect(distToAxis).toBeCloseTo(radius, 11);
+        }
+      }
+    }
+
+    for (const [px, py] of grid) {
+      const [rx, ry, rz] = deformVertexTopHingeCylinder(px, py, 0, 0);
+      expect(rx).toBeCloseTo(px, 12);
+      expect(ry).toBeCloseTo(py, 12);
+      expect(rz).toBeCloseTo(0, 12);
+
+      const [fx, fy, fz] = deformVertexTopHingeCylinder(px, py, 0, Math.PI);
+      expect(fx).toBeCloseTo(px, 12);
+      expect(fy).toBeCloseTo(2 - py, 12);
+      expect(fz).toBeCloseTo(0, 12);
+    }
+
+    const segments = 400;
+    const px = 0.5 * PAGE_ASPECT;
+    for (const k of [0, 0.5, CYL_KAPPA_MAX]) {
+      for (const rho of [0, 1.1, Math.PI]) {
+        let arcLength = 0;
+        let prev = deformVertexTopHingeCylinder(px, 0, k, rho);
+        for (let i = 1; i <= segments; i += 1) {
+          const py = i / segments;
+          const next = deformVertexTopHingeCylinder(px, py, k, rho);
+          arcLength += Math.hypot(next[0] - prev[0], next[1] - prev[1], next[2] - prev[2]);
+          prev = next;
+        }
+        expect(arcLength).toBeCloseTo(1, 4);
+      }
+    }
+  });
+
+  it("blends top-hinge left cone (-1), cylinder (0), and right cone (+1) smoothly", () => {
+    const pSamples = [-1, -0.7, -0.35, 0, 0.35, 0.7, 1, -2, 2, Number.NaN];
+    const conicSamples = [-1, -0.6, -1e-6, 0, 1e-6, 0.6, 1];
+
+    const rest = coneParams(0, 1, 0, PAGE_ASPECT);
+    const restKappa = cylKappa(0, 1, PAGE_ASPECT);
+    for (const c of [-1, -0.5, 0, 0.5, 1]) {
+      for (const [px, py] of grid) {
+        const [vx, vy, vz] = deformVertexVerticalCurl(
+          px,
+          py,
+          rest.theta,
+          rest.Ay,
+          rest.rho,
+          restKappa,
+          c,
+        );
+        expect(vx).toBeCloseTo(px, 12);
+        expect(vy).toBeCloseTo(py, 12);
+        expect(vz).toBeCloseTo(0, 12);
+      }
+    }
+
+    for (const p of pSamples) {
+      const { theta, Ay, rho } = coneParams(p, 1, 0, PAGE_ASPECT);
+      const kappa = cylKappa(p, 1, PAGE_ASPECT);
+
+      expect(Ay).toBeLessThan(0);
+      expect(theta).toBeGreaterThan(THETA_MIN);
+      expect(theta).toBeLessThanOrEqual(HALF_PI);
+      expect(rho).toBeGreaterThanOrEqual(0);
+      expect(rho).toBeLessThanOrEqual(Math.PI);
+
+      for (const [px, py] of grid) {
+        const left = deformVertexTopHingeLeftCone(px, py, theta, Ay, rho);
+        const cyl = deformVertexTopHingeCylinder(px, py, kappa, rho);
+        const right = deformVertexTopHingeCone(px, py, theta, Ay, rho);
+
+        const atNeg1 = deformVertexVerticalCurl(px, py, theta, Ay, rho, kappa, -1);
+        const atZero = deformVertexVerticalCurl(px, py, theta, Ay, rho, kappa, 0);
+        const atPos1 = deformVertexVerticalCurl(px, py, theta, Ay, rho, kappa, 1);
+
+        expect(atNeg1[0]).toBeCloseTo(left[0], 12);
+        expect(atNeg1[1]).toBeCloseTo(left[1], 12);
+        expect(atNeg1[2]).toBeCloseTo(left[2], 12);
+
+        expect(atZero[0]).toBeCloseTo(cyl[0], 12);
+        expect(atZero[1]).toBeCloseTo(cyl[1], 12);
+        expect(atZero[2]).toBeCloseTo(cyl[2], 12);
+
+        expect(atPos1[0]).toBeCloseTo(right[0], 12);
+        expect(atPos1[1]).toBeCloseTo(right[1], 12);
+        expect(atPos1[2]).toBeCloseTo(right[2], 12);
+
+        for (const c of conicSamples) {
+          const [vx, vy, vz] = deformVertexVerticalCurl(px, py, theta, Ay, rho, kappa, c);
+          expect(Number.isFinite(vx)).toBe(true);
+          expect(Number.isFinite(vy)).toBe(true);
+          expect(Number.isFinite(vz)).toBe(true);
+        }
+
+        const nearNeg = deformVertexVerticalCurl(px, py, theta, Ay, rho, kappa, -1e-6);
+        const nearPos = deformVertexVerticalCurl(px, py, theta, Ay, rho, kappa, 1e-6);
+        expect(nearNeg[0]).toBeCloseTo(atZero[0], 5);
+        expect(nearNeg[1]).toBeCloseTo(atZero[1], 5);
+        expect(nearNeg[2]).toBeCloseTo(atZero[2], 5);
+        expect(nearPos[0]).toBeCloseTo(atZero[0], 5);
+        expect(nearPos[1]).toBeCloseTo(atZero[1], 5);
+        expect(nearPos[2]).toBeCloseTo(atZero[2], 5);
+      }
+    }
+  });
+
+  it("calibrates vertical-layout cone parameters and solves horizontal curl controls", () => {
+    for (const bend of [0, 0.5, 1]) {
+      for (let i = 0; i <= 20; i += 1) {
+        const p = i / 20;
+        const { theta, Ay, rho } = coneParams(p, 1, bend, PAGE_ASPECT);
+        expect(Ay).toBeLessThan(0);
+        expect(theta).toBeGreaterThan(THETA_MIN);
+        expect(theta).toBeLessThanOrEqual(HALF_PI);
+        expect(rho).toBeGreaterThanOrEqual(0);
+        expect(rho).toBeLessThanOrEqual(Math.PI);
+
+        const sinTheta = Math.sin(theta);
+        for (const [px, py] of grid) {
+          const localX = 1 - py;
+          const localY = PAGE_ASPECT - px;
+          const R = Math.hypot(localX, localY - Ay);
+          const alpha = Math.asin(Math.min(1, Math.max(-1, localX / R)));
+          expect(alpha / sinTheta).toBeLessThan(Math.PI);
+        }
+      }
+    }
+
+    // Grab near bottom-right corner (local grabU = 0.9, grabV = 0.05 * PAGE_ASPECT) and drag left (+deltaV)
+    const rightStart = solveVerticalCurlControl(0.35, 0.9, 0.05 * PAGE_ASPECT, 0, 1, PAGE_ASPECT);
+    expect(rightStart.conicContribution).toBeCloseTo(0.9, 2);
+    expect(rightStart.cornerBend).toBe(0);
+
+    const rightDragIn = solveVerticalCurlControl(
+      0.35,
+      0.9,
+      0.05 * PAGE_ASPECT,
+      0.15,
+      1,
+      PAGE_ASPECT,
+    );
+    expect(rightDragIn.conicContribution).toBe(1);
+    expect(rightDragIn.cornerBend).toBeGreaterThan(0);
+
+    // Grab near bottom-left corner (grabV = 0.95 * PAGE_ASPECT) and drag right (-deltaV)
+    const leftDragIn = solveVerticalCurlControl(
+      0.35,
+      0.9,
+      0.95 * PAGE_ASPECT,
+      -0.15,
+      1,
+      PAGE_ASPECT,
+    );
+    expect(leftDragIn.conicContribution).toBe(-1);
+    expect(leftDragIn.cornerBend).toBeGreaterThan(0);
+
+    // Grab bottom-center and move horizontally
+    const centerRest = solveVerticalCurlControl(0.35, 0.85, 0.5 * PAGE_ASPECT, 0, 1, PAGE_ASPECT);
+    expect(centerRest.conicContribution).toBeCloseTo(0, 6);
+    expect(centerRest.cornerBend).toBe(0);
+
+    const centerLeft = solveVerticalCurlControl(
+      0.35,
+      0.85,
+      0.5 * PAGE_ASPECT,
+      0.08,
+      1,
+      PAGE_ASPECT,
+    );
+    expect(centerLeft.conicContribution).toBeGreaterThan(0);
+
+    const centerRight = solveVerticalCurlControl(
+      0.35,
+      0.85,
+      0.5 * PAGE_ASPECT,
+      -0.08,
+      1,
+      PAGE_ASPECT,
+    );
+    expect(centerRight.conicContribution).toBeCloseTo(-centerLeft.conicContribution, 4);
   });
 });
