@@ -5,6 +5,7 @@ import {
   HALF_PI,
   coneParams,
   cylKappa,
+  pointerXToConicContribution,
   pointerYToConicContribution,
   solveVerticalCurlControl,
   turnOpacity,
@@ -127,18 +128,25 @@ export function initBookRenderer(
   const uRho = gl.getUniformLocation(program, "u_rho");
   const uConicContribution = gl.getUniformLocation(program, "u_conicContribution");
   const uCylKappa = gl.getUniformLocation(program, "u_cylKappa");
+  const uPageWidth = gl.getUniformLocation(program, "u_pageWidth");
   const uPageHeight = gl.getUniformLocation(program, "u_pageHeight");
+  const uVertical = gl.getUniformLocation(program, "u_vertical");
   const uZBias = gl.getUniformLocation(program, "u_zBias");
   const uLightPos = gl.getUniformLocation(program, "u_lightPos");
 
   const mesh = createPlaneMesh(gl);
   const textureManager = createPageTextureManager(canvas, gl, pages);
   const geometrySync = createGeometrySync(canvas);
+  const portraitMediaQuery = window.matchMedia("(orientation: portrait)");
   const pageEntries = pages.map((content) => ({
     page: content.closest<HTMLElement>(".page") ?? content,
     frame: content.closest<HTMLElement>(".page__frame") ?? content,
     content,
   }));
+
+  function isVerticalLayoutActive(): boolean {
+    return document.body.dataset.layout === "vertical" && portraitMediaQuery.matches;
+  }
 
   let lightPos: Vec3 = options?.lightPos ?? DEFAULT_LIGHT_POS;
   let activeConicContribution = 1;
@@ -152,7 +160,9 @@ export function initBookRenderer(
   let activePointerId: number | null = null;
   let activeTouchId: number | null = null;
   let isPointerDragging = false;
+  let grabStartClientX = 0;
   let grabStartClientY = 0;
+  let activePointerClientX = 0;
   let activePointerClientY = 0;
   let grabNormX = 1;
   let grabNormY = 0;
@@ -231,6 +241,7 @@ export function initBookRenderer(
     }
 
     const mode = readActiveMode();
+    const isVertical = isVerticalLayoutActive();
     const modeChanged = mode !== lastMode;
 
     let progressChanged = false;
@@ -308,9 +319,9 @@ export function initBookRenderer(
       const centeredLeft = canvasRect.left + (canvasRect.width - sampleRect.width) * 0.5;
       const centeredTop = canvasRect.top + (canvasRect.height - sampleRect.height) * 0.5;
       centeredRect = new DOMRect(centeredLeft, centeredTop, sampleRect.width, sampleRect.height);
-      layoutSignature = `curl:${canvasRect.width.toFixed(1)}x${canvasRect.height.toFixed(1)}:${sampleRect.width.toFixed(2)}x${sampleRect.height.toFixed(2)}`;
+      layoutSignature = `curl:${isVertical ? "v" : "h"}:${canvasRect.width.toFixed(1)}x${canvasRect.height.toFixed(1)}:${sampleRect.width.toFixed(2)}x${sampleRect.height.toFixed(2)}`;
     } else {
-      const sigParts: string[] = [mode];
+      const sigParts: string[] = [mode, isVertical ? "v" : "h"];
       for (let i = 0; i < pageEntries.length; i += 1) {
         const { content, frame } = pageEntries[i];
         const rect = frame.getBoundingClientRect();
@@ -330,16 +341,10 @@ export function initBookRenderer(
       turningIdx !== -1 &&
       isPointerDragging &&
       centeredRect &&
+      centeredRect.width > 0 &&
       centeredRect.height > 0
     ) {
-      const deltaYUp = (grabStartClientY - activePointerClientY) / centeredRect.height;
-      const solved = solveVerticalCurlControl(
-        progressScratch[turningIdx],
-        grabNormX * mesh.width,
-        grabNormY,
-        deltaYUp,
-        mesh.width,
-      );
+      const solved = solveDragControl(progressScratch[turningIdx], centeredRect, isVertical);
       activeConicContribution = solved.conicContribution;
       activeCornerBend = solved.cornerBend;
     }
@@ -394,8 +399,13 @@ export function initBookRenderer(
     gl.bindVertexArray(mesh.vao);
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform1i(uPageTex, 0);
+    gl.uniform1f(uPageWidth, mesh.width);
     gl.uniform1f(uPageHeight, mesh.height);
+    gl.uniform1f(uVertical, isVertical ? 1 : 0);
     gl.uniform3f(uLightPos, lightPos[0], lightPos[1], lightPos[2]);
+
+    const sweepLength = isVertical ? mesh.height : mesh.width;
+    const hingeSpan = isVertical ? mesh.width : mesh.height;
 
     const vpMatrix = createPerspectiveViewMatrix(canvasRect.width, canvasRect.height);
 
@@ -439,7 +449,7 @@ export function initBookRenderer(
           const turnTex = textureManager.getTexture(pageEntries[turningIdx].content);
           if (turnTex) {
             const p = progressScratch[turningIdx];
-            const { theta, Ay, rho } = coneParams(p, mesh.width, activeCornerBend);
+            const { theta, Ay, rho } = coneParams(p, sweepLength, activeCornerBend, hingeSpan);
             drawPageMesh(
               mvpScratch,
               centeredModel,
@@ -449,7 +459,7 @@ export function initBookRenderer(
               Ay,
               rho,
               activeConicContribution,
-              cylKappa(p, mesh.width),
+              cylKappa(p, sweepLength, hingeSpan),
               0,
             );
           }
@@ -526,10 +536,39 @@ export function initBookRenderer(
     };
   }
 
+  function solveDragControl(
+    p: number,
+    pageRect: { readonly width: number; readonly height: number },
+    vertical: boolean,
+  ) {
+    if (vertical) {
+      const grabU = (1 - grabNormY) * mesh.height;
+      const grabV = (1 - grabNormX) * mesh.width;
+      const deltaV =
+        pageRect.width > 0
+          ? ((grabStartClientX - activePointerClientX) / pageRect.width) * mesh.width
+          : 0;
+      return solveVerticalCurlControl(p, grabU, grabV, deltaV, mesh.height, mesh.width);
+    }
+    const deltaYUp =
+      pageRect.height > 0 ? (grabStartClientY - activePointerClientY) / pageRect.height : 0;
+    return solveVerticalCurlControl(
+      p,
+      grabNormX * mesh.width,
+      grabNormY * mesh.height,
+      deltaYUp,
+      mesh.width,
+      mesh.height,
+    );
+  }
+
   function beginDrag(clientX: number, clientY: number): void {
     const pageRect = getCenteredPageRect();
+    const vertical = isVerticalLayoutActive();
     isPointerDragging = true;
+    grabStartClientX = clientX;
     grabStartClientY = clientY;
+    activePointerClientX = clientX;
     activePointerClientY = clientY;
     grabNormX =
       pageRect.width > 0 ? Math.min(1, Math.max(0, (clientX - pageRect.left) / pageRect.width)) : 1;
@@ -538,7 +577,9 @@ export function initBookRenderer(
         ? Math.min(1, Math.max(0, 1 - (clientY - pageRect.top) / pageRect.height))
         : 0;
 
-    const initialConic = pointerYToConicContribution(clientY, pageRect.top, pageRect.height);
+    const initialConic = vertical
+      ? pointerXToConicContribution(clientX, pageRect.left, pageRect.width)
+      : pointerYToConicContribution(clientY, pageRect.top, pageRect.height);
     if (activeTurnPage !== -1) {
       scheduleRender();
     } else {
@@ -548,20 +589,14 @@ export function initBookRenderer(
     }
   }
 
-  function moveDrag(clientY: number): void {
+  function moveDrag(clientX: number, clientY: number): void {
+    activePointerClientX = clientX;
     activePointerClientY = clientY;
     if (activeTurnPage !== -1) {
       scheduleRender();
     } else {
       const pageRect = getCenteredPageRect();
-      const deltaYUp = pageRect.height > 0 ? (grabStartClientY - clientY) / pageRect.height : 0;
-      const solved = solveVerticalCurlControl(
-        0,
-        grabNormX * mesh.width,
-        grabNormY,
-        deltaYUp,
-        mesh.width,
-      );
+      const solved = solveDragControl(0, pageRect, isVerticalLayoutActive());
       pendingConicContribution = solved.conicContribution;
       pendingCornerBend = solved.cornerBend;
       pendingConicTimestamp = performance.now();
@@ -596,7 +631,7 @@ export function initBookRenderer(
       endDrag();
       return;
     }
-    moveDrag(event.clientY);
+    moveDrag(event.clientX, event.clientY);
   }
 
   function onPointerUp(event: PointerEvent): void {
@@ -635,7 +670,7 @@ export function initBookRenderer(
     for (let i = 0; i < event.changedTouches.length; i += 1) {
       const touch = event.changedTouches[i];
       if (touch.identifier === activeTouchId) {
-        moveDrag(touch.clientY);
+        moveDrag(touch.clientX, touch.clientY);
         return;
       }
     }
@@ -660,6 +695,14 @@ export function initBookRenderer(
     }
   }
 
+  function onOrientationChange(): void {
+    pendingConicContribution = null;
+    pendingCornerBend = 0;
+    resizeDirty = true;
+    canvas.requestPaint?.();
+    scheduleRender();
+  }
+
   updateCanvasSize();
 
   const resizeObserver = new ResizeObserver(() => {
@@ -669,6 +712,7 @@ export function initBookRenderer(
     }
   });
   resizeObserver.observe(canvas);
+  portraitMediaQuery.addEventListener("change", onOrientationChange);
   canvas.addEventListener("paint", onPaint);
   book.addEventListener("pointerdown", onPointerDown, { passive: true });
   window.addEventListener("pointermove", onPointerMove, { passive: true });
@@ -712,6 +756,7 @@ export function initBookRenderer(
         rafId = null;
       }
       resizeObserver.disconnect();
+      portraitMediaQuery.removeEventListener("change", onOrientationChange);
       canvas.removeEventListener("paint", onPaint);
       book.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("pointermove", onPointerMove);

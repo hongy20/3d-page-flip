@@ -36,6 +36,17 @@
   }
 }
 
+@keyframes stack-pin-y {
+  0%,
+  48% {
+    transform: translateY(-100dvh) perspective(1200px) translateZ(-120px);
+  }
+  50%,
+  100% {
+    transform: translateY(0) perspective(1200px) translateZ(0);
+  }
+}
+
 @keyframes stack-reveal {
   0%,
   48% {
@@ -209,6 +220,30 @@ body[data-mode="stack"] .page:not(:first-child) .page__frame {
     entry -2400% exit 2500%,
     entry -2400% exit 2500%;
   will-change: transform, opacity;
+}
+
+@media (orientation: portrait) {
+  html:has(body[data-layout="vertical"]),
+  body[data-layout="vertical"] {
+    overscroll-behavior-y: none;
+  }
+
+  body[data-layout="vertical"] .book {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    overscroll-behavior-y: none;
+  }
+
+  body[data-layout="vertical"] .page {
+    animation-timeline: view(block);
+    view-timeline: --page-view block;
+  }
+
+  body[data-layout="vertical"][data-mode="stack"] .page:not(:first-child) .page__frame {
+    animation-name: stack-pin-y, stack-reveal;
+  }
 }
 
 .page__frame {

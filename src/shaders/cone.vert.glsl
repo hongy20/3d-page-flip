@@ -11,7 +11,9 @@ uniform float u_Ay;
 uniform float u_rho;
 uniform float u_conicContribution;
 uniform float u_cylKappa;
+uniform float u_pageWidth;
 uniform float u_pageHeight;
+uniform float u_vertical;
 uniform float u_zBias;
 
 out vec2 v_uv;
@@ -39,9 +41,9 @@ vec3 coneLocal(vec2 p) {
   return vec3(Tx, Ty, Tz);
 }
 
-vec3 topConeLocal(vec2 p) {
-  vec3 mirrored = coneLocal(vec2(p.x, u_pageHeight - p.y));
-  return vec3(mirrored.x, u_pageHeight - mirrored.y, mirrored.z);
+vec3 topConeLocal(vec2 p, float span) {
+  vec3 mirrored = coneLocal(vec2(p.x, span - p.y));
+  return vec3(mirrored.x, span - mirrored.y, mirrored.z);
 }
 
 vec3 cylLocal(vec2 p) {
@@ -63,18 +65,27 @@ vec3 cylLocal(vec2 p) {
 }
 
 vec3 curlDeform(vec2 p) {
+  bool vertical = u_vertical > 0.5;
+  vec2 local = vertical ? vec2(u_pageHeight - p.y, u_pageWidth - p.x) : p;
+  float hingeSpan = vertical ? u_pageWidth : u_pageHeight;
+
   float c = clamp(u_conicContribution, -1.0, 1.0);
-  vec3 cyl = cylLocal(p);
-  vec3 cone = c < 0.0 ? topConeLocal(p) : coneLocal(p);
+  vec3 cyl = cylLocal(local);
+  vec3 cone = c < 0.0 ? topConeLocal(local, hingeSpan) : coneLocal(local);
   vec3 localPos = mix(cyl, cone, abs(c));
 
   float cosRho = cos(u_rho);
   float sinRho = sin(u_rho);
-  return vec3(
+  vec3 turned = vec3(
     localPos.x * cosRho - localPos.z * sinRho,
     localPos.y,
     localPos.x * sinRho + localPos.z * cosRho
   );
+
+  if (vertical) {
+    return vec3(u_pageWidth - turned.y, u_pageHeight - turned.x, turned.z);
+  }
+  return turned;
 }
 
 void main() {
