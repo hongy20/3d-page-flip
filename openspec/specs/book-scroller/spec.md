@@ -17,12 +17,12 @@ The project SHALL be initialized with Vite (`vanilla-ts`), configured with `stri
 
 ### Requirement: Book scroller and renderer-agnostic page DOM structure
 
-`reader.html` SHALL contain one scroller element (`.book`) whose `.page` elements (`1..N`) and `--page-aspect` are constructed from the selected catalog book and populated at runtime with inline `<svg>` content (`.page__content`) displaying `public/books/<id>/page_1.svg`..`page_N.svg`, interactive `:hover` badges, a back-to-library link in `.controls`, and preserved native SVG links.
+`reader.html` SHALL contain one scroller element (`.book`) whose `.page` elements (`1..N`) and `--page-aspect` are constructed from the selected catalog book and populated at runtime with inline `<svg>` content (`.page__content`) displaying `public/books/<id>/page_1.svg`..`page_N.svg`, interactive `:hover` badges, a back-to-library link and a `Settings` link in `.controls` (replacing the inline mode radio group), and preserved native SVG links.
 
 #### Scenario: Eighteen accessible HTML/SVG pages rendered
 
 - **WHEN** `reader.html` is loaded in Chrome with the default Málaga catalog book
-- **THEN** `.book` contains 18 `.page` elements rendering inline `page_1.svg` through `page_18.svg` and interactive `:hover` styling
+- **THEN** `.book` contains 18 `.page` elements rendering inline `page_1.svg` through `page_18.svg`, interactive `:hover` styling, and `Library` plus `Settings` links in `.controls`
 
 #### Scenario: Selected catalog book renders N accessible HTML/SVG pages
 

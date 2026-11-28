@@ -8,14 +8,19 @@
   <body>
     <header class="library-header">
       <div class="library-header__inner">
-        <h1 class="library-header__title">Dropp</h1>
+        <div class="library-header__top">
+          <h1 class="library-header__title">Dropp</h1>
+          <a class="library-header__settings" href="./settings.html">Settings</a>
+        </div>
         <p class="library-header__subtitle">
           Browser e-book reader powered by CSS scroll-snap, HTML-in-Canvas, and 3D cone page curl.
         </p>
       </div>
     </header>
     <main class="library" aria-label="Book library">
-      <ul id="book-shelf" class="shelf" aria-label="Available books"></ul>
+      <div class="cabinet">
+        <ul id="book-shelf" class="shelf" aria-label="Available books"></ul>
+      </div>
     </main>
     <script type="module" src="/src/library.ts"></script>
   </body>

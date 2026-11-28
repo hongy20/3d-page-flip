@@ -97,9 +97,9 @@ function readPageProgress(pageEl: HTMLElement): number {
 }
 
 function readActiveMode(): ReaderMode {
-  const checked = document.querySelector<HTMLInputElement>('input[name="mode"]:checked');
-  if (checked?.value === "curl" || checked?.value === "stack") {
-    return checked.value;
+  const mode = document.body.dataset.mode;
+  if (mode === "curl" || mode === "stack") {
+    return mode;
   }
   return "slide";
 }

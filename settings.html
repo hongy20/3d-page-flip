@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dropp — Settings</title>
+  </head>
+  <body>
+    <header class="settings-header">
+      <div class="settings-header__inner">
+        <a id="settings-back" class="settings-back" href="./">
+          <span aria-hidden="true">&larr;</span>
+          <span id="settings-back-label">Back to library</span>
+        </a>
+        <h1 class="settings-header__title">Reader Settings</h1>
+        <p class="settings-header__subtitle">
+          Preferences are saved locally in this browser and applied across all books.
+        </p>
+      </div>
+    </header>
+
+    <main class="settings" aria-label="Reader settings">
+      <form id="settings-form" class="settings-form">
+        <fieldset class="setting-group">
+          <legend class="setting-group__legend">Transition mode</legend>
+          <p class="setting-group__intro">
+            Choose how pages transition when turning forward or backward.
+          </p>
+
+          <div class="setting-options">
+            <label class="setting-option" data-option="mode-slide">
+              <input type="radio" name="mode" value="slide" aria-describedby="mode-slide-desc" />
+              <span class="setting-option__body">
+                <span class="setting-option__title">Slide</span>
+                <span id="mode-slide-desc" class="setting-option__desc">
+                  Native CSS scroll-snap sliding across adjacent pages.
+                </span>
+                <span id="mode-slide-reason" class="setting-option__reason" hidden></span>
+              </span>
+            </label>
+
+            <label class="setting-option" data-option="mode-stack">
+              <input type="radio" name="mode" value="stack" aria-describedby="mode-stack-desc" />
+              <span class="setting-option__body">
+                <span class="setting-option__title">Stack</span>
+                <span id="mode-stack-desc" class="setting-option__desc">
+                  Pure-CSS layered deck where the top page slides off while the next rises forward.
+                </span>
+                <span id="mode-stack-reason" class="setting-option__reason" hidden></span>
+              </span>
+            </label>
+
+            <label class="setting-option" data-option="mode-curl">
+              <input type="radio" name="mode" value="curl" aria-describedby="mode-curl-desc" />
+              <span class="setting-option__body">
+                <span class="setting-option__title">Curl</span>
+                <span id="mode-curl-desc" class="setting-option__desc">
+                  3D cone page curl rendered live via Chrome HTML-in-Canvas and WebGL2.
+                </span>
+                <span id="mode-curl-reason" class="setting-option__reason" hidden></span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="setting-group">
+          <legend class="setting-group__legend">Portrait page layout</legend>
+          <p class="setting-group__intro">
+            Choose page flow direction when reading on a portrait viewport.
+          </p>
+
+          <div class="setting-options">
+            <label class="setting-option" data-option="layout-horizontal">
+              <input
+                type="radio"
+                name="portraitLayout"
+                value="horizontal"
+                aria-describedby="layout-horizontal-desc"
+              />
+              <span class="setting-option__body">
+                <span class="setting-option__title">Horizontal</span>
+                <span id="layout-horizontal-desc" class="setting-option__desc">
+                  Swipe left and right through pages like a traditional book.
+                </span>
+                <span id="layout-horizontal-reason" class="setting-option__reason" hidden></span>
+              </span>
+            </label>
+
+            <label class="setting-option" data-option="layout-vertical">
+              <input
+                type="radio"
+                name="portraitLayout"
+                value="vertical"
+                aria-describedby="layout-vertical-desc"
+              />
+              <span class="setting-option__body">
+                <span class="setting-option__title">Vertical</span>
+                <span id="layout-vertical-desc" class="setting-option__desc">
+                  Swipe up and down through single pages in portrait orientation.
+                </span>
+                <span id="layout-vertical-reason" class="setting-option__reason" hidden></span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
+
+        <p id="settings-status" class="settings-status" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+
+    <script type="module" src="/src/settings.ts"></script>
+  </body>
+</html>
