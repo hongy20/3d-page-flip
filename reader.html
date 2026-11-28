@@ -6,28 +6,21 @@
     <title>Dropp</title>
   </head>
   <body>
-    <fieldset class="controls" aria-label="Reader controls">
-      <legend class="sr-only">Reader controls</legend>
+    <nav class="controls" aria-label="Reader controls">
       <a class="controls__back" href="./" aria-label="Back to library">
         <span aria-hidden="true">&larr;</span>
         <span>Library</span>
       </a>
       <span class="controls__divider" aria-hidden="true"></span>
-      <div class="controls__group" role="radiogroup" aria-label="Transition mode">
-        <label class="controls__option">
-          <input type="radio" name="mode" value="slide" checked />
-          <span>Slide</span>
-        </label>
-        <label class="controls__option">
-          <input type="radio" name="mode" value="stack" />
-          <span>Stack</span>
-        </label>
-        <label class="controls__option">
-          <input type="radio" name="mode" value="curl" />
-          <span>Curl</span>
-        </label>
-      </div>
-    </fieldset>
+      <a
+        id="controls-settings"
+        class="controls__settings"
+        href="./settings.html"
+        aria-label="Reader settings"
+      >
+        Settings
+      </a>
+    </nav>
     <canvas id="book-canvas" class="stage" content="drawable">
       <main class="book" drawable aria-label="Dropp Reader"></main>
     </canvas>

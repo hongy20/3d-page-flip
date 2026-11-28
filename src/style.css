@@ -109,7 +109,10 @@ body {
 
 .controls__back,
 .controls__back:link,
-.controls__back:visited {
+.controls__back:visited,
+.controls__settings,
+.controls__settings:link,
+.controls__settings:visited {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -130,60 +133,14 @@ body {
     color 150ms ease;
 }
 
-.controls__back:hover {
+.controls__back:hover,
+.controls__settings:hover {
   background: rgba(253, 251, 247, 0.12);
   color: #ffffff;
 }
 
-.controls__back:focus-visible {
-  outline: 2px solid #fdfbf7;
-  outline-offset: 2px;
-}
-
-.controls__group {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.controls__option {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font:
-    600 12px/1 system-ui,
-    -apple-system,
-    sans-serif;
-  letter-spacing: 0.02em;
-  color: rgba(246, 243, 236, 0.78);
-  cursor: pointer;
-  user-select: none;
-  transition:
-    background-color 150ms ease,
-    color 150ms ease;
-}
-
-.controls__option input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.controls__option:hover {
-  color: #ffffff;
-}
-
-.controls__option:has(:checked) {
-  background: #fdfbf7;
-  color: #1a1917;
-}
-
-.controls__option:has(:focus-visible) {
+.controls__back:focus-visible,
+.controls__settings:focus-visible {
   outline: 2px solid #fdfbf7;
   outline-offset: 2px;
 }
@@ -228,21 +185,21 @@ body {
   view-timeline: --page-view inline;
 }
 
-body:has(input[name="mode"][value="curl"]:checked) .book {
+body[data-mode="curl"] .book {
   background-color: rgba(0, 0, 0, 0.001);
 }
 
-body:has(input[name="mode"][value="curl"]:checked) .page {
+body[data-mode="curl"] .page {
   overflow: visible;
   z-index: calc(sibling-count() - sibling-index());
 }
 
-body:has(input[name="mode"][value="stack"]:checked) .page {
+body[data-mode="stack"] .page {
   overflow: visible;
   z-index: calc(sibling-count() - sibling-index());
 }
 
-body:has(input[name="mode"][value="stack"]:checked) .page:not(:first-child) .page__frame {
+body[data-mode="stack"] .page:not(:first-child) .page__frame {
   animation-name: stack-pin, stack-reveal;
   animation-duration: auto, auto;
   animation-timing-function: linear, linear;

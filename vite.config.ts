@@ -21,6 +21,7 @@ export default defineConfig({
       input: {
         main: fileURLToPath(new URL("./index.html", import.meta.url)),
         reader: fileURLToPath(new URL("./reader.html", import.meta.url)),
+        settings: fileURLToPath(new URL("./settings.html", import.meta.url)),
       },
     },
   },

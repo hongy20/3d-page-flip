@@ -6,91 +6,324 @@
   padding: 0;
 }
 
+:root {
+  /* Inline SVG turbulence wood-grain textures (zero external network requests) */
+  --wood-grain-v: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.14 0.012' numOctaves='3' seed='7'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23v)' opacity='0.18'/%3E%3C/svg%3E");
+  --wood-grain-h: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='120'%3E%3Cfilter id='h'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.014 0.24' numOctaves='3' seed='11'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23h)' opacity='0.22'/%3E%3C/svg%3E");
+}
+
 html,
 body {
   min-height: 100dvh;
-  background: #1a1917;
-  color: #f6f3ec;
+  background-color: #9c672b;
+  color: #fff8eb;
   font-family: system-ui, -apple-system, sans-serif;
   overflow-y: auto;
 }
 
+/* Carved medium-oak top navigation rail */
 .library-header {
-  padding: clamp(28px, 5vw, 52px) clamp(20px, 5vw, 48px) 16px;
-  border-bottom: 1px solid rgba(253, 251, 247, 0.1);
+  position: relative;
+  z-index: 4;
+  padding: clamp(18px, 3vw, 28px) clamp(16px, 4.5vw, 64px) clamp(16px, 2.5vw, 22px);
+  background-color: #6b4018;
+  background-image:
+    var(--wood-grain-h), linear-gradient(180deg, #865423 0%, #6d4119 52%, #593312 94%, #3d2109 100%);
+  border-top: 1px solid rgba(255, 229, 178, 0.25);
+  border-bottom: 2px solid #351b06;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 224, 172, 0.24),
+    0 8px 20px rgba(30, 13, 2, 0.55);
 }
 
 .library-header__inner {
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
+}
+
+.library-header__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.library-header__settings,
+.library-header__settings:link,
+.library-header__settings:visited {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border: 1px solid rgba(255, 229, 178, 0.32);
+  border-radius: 999px;
+  background: rgba(34, 18, 6, 0.56);
+  color: #fff8eb;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.library-header__settings:hover {
+  background: rgba(255, 238, 204, 0.18);
+  border-color: rgba(255, 236, 196, 0.68);
+  color: #ffffff;
+}
+
+.library-header__settings:focus-visible {
+  outline: 2px solid #fff3cf;
+  outline-offset: 3px;
 }
 
 .library-header__title {
-  font-size: clamp(24px, 3vw, 34px);
+  font-size: clamp(24px, 3vw, 32px);
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #fdfbf7;
+  color: #fff8eb;
+  text-shadow: 0 1px 2px rgba(32, 14, 2, 0.65);
 }
 
 .library-header__subtitle {
-  margin-top: 8px;
+  margin-top: 6px;
   max-width: 62ch;
   font-size: 14px;
-  line-height: 1.5;
-  color: rgba(246, 243, 236, 0.74);
+  line-height: 1.45;
+  color: rgba(255, 245, 228, 0.88);
+  text-shadow: 0 1px 1px rgba(32, 14, 2, 0.5);
 }
 
 .library {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px) 64px;
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+/* Full-bleed golden honey-oak bookcase wall */
+.cabinet {
+  position: relative;
+  min-height: calc(100dvh - 102px);
+  overflow-x: clip;
+  background-color: #b47c38;
+  background-image:
+    radial-gradient(ellipse at 50% 18%, rgba(255, 222, 162, 0.16), transparent 68%),
+    linear-gradient(
+      90deg,
+      rgba(56, 26, 4, 0.36) 0%,
+      transparent 3.5%,
+      transparent 96.5%,
+      rgba(56, 26, 4, 0.36) 100%
+    ),
+    var(--wood-grain-v),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 226, 176, 0.08) 0 42px,
+      rgba(136, 82, 26, 0.14) 42px 86px,
+      rgba(222, 168, 96, 0.09) 86px 144px,
+      rgba(116, 67, 20, 0.12) 144px 190px
+    ),
+    linear-gradient(180deg, #ab7230 0%, #bf873f 46%, #a66d2c 100%);
+  box-shadow: inset 0 16px 28px rgba(38, 16, 2, 0.45);
 }
 
 .shelf {
+  --shelf-cols: 3;
+  --shelf-gap: clamp(16px, 3.5vw, 44px);
+  --shelf-pad-x: clamp(16px, 4.5vw, 64px);
+  --shelf-board-h: 34px;
+  --meta-h: 64px;
+  --shelf-row-gap: clamp(32px, 4vw, 48px);
+  max-width: 1200px;
+  margin: 0 auto;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
-  gap: 28px;
+  grid-template-columns: repeat(var(--shelf-cols), minmax(0, 1fr));
+  column-gap: var(--shelf-gap);
+  row-gap: var(--shelf-row-gap);
+  align-items: stretch;
+  padding: clamp(28px, 4vw, 48px) var(--shelf-pad-x) clamp(32px, 4vw, 56px);
+}
+
+@media (orientation: landscape) {
+  .shelf {
+    --shelf-cols: 3;
+  }
+}
+
+@media (orientation: portrait) {
+  .shelf {
+    --shelf-cols: 2;
+  }
+}
+
+.shelf__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Full-width thick sunlit honey-oak shelf board activated on the first item of each row */
+.shelf__item::after {
+  content: none;
+  position: absolute;
+  left: calc(-1 * var(--shelf-pad-x) - 100vw);
+  right: auto;
+  bottom: calc(var(--meta-h) + 8px);
+  width: 300vw;
+  height: var(--shelf-board-h);
+  z-index: 0;
+  pointer-events: none;
+  background-color: #c99449;
+  background-image:
+    var(--wood-grain-h),
+    linear-gradient(
+      180deg,
+      #b57e34 0%,
+      #d6a75c 2px,
+      #eed092 11px,
+      #faecc7 13px,
+      #cfa054 15px,
+      #b68136 25px,
+      #8f5c1e 32px,
+      #5a340f 100%
+    );
+  border-top: 1px solid rgba(98, 54, 16, 0.55);
+  border-bottom: 1px solid #3f2107;
+  box-shadow:
+    inset 0 1px 2px rgba(58, 28, 6, 0.35),
+    0 12px 22px rgba(34, 15, 2, 0.72),
+    0 4px 8px rgba(24, 10, 0, 0.52);
+}
+
+@media (orientation: landscape) {
+  .shelf__item:nth-child(3n + 1)::after {
+    content: "";
+  }
+}
+
+@media (orientation: portrait) {
+  .shelf__item:nth-child(2n + 1)::after {
+    content: "";
+  }
 }
 
 .book-card {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 14px;
-  border: 1px solid rgba(253, 251, 247, 0.12);
-  border-radius: 12px;
-  background: rgba(34, 32, 29, 0.72);
+  width: 100%;
+  max-width: 220px;
+  height: 100%;
+  margin-inline: auto;
   color: inherit;
   text-decoration: none;
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease,
-    background-color 180ms ease;
+  border-radius: 6px;
 }
 
-.book-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(253, 251, 247, 0.28);
-  background: rgba(42, 39, 35, 0.9);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+/* Overhead warm spotlight cone (illuminated on hover / focus-visible) */
+.book-card::before {
+  content: "";
+  position: absolute;
+  inset: -28px -18px calc(var(--meta-h) + var(--shelf-board-h) - 16px);
+  z-index: -1;
+  border-radius: 14px;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    conic-gradient(
+      from 164deg at 50% -4%,
+      transparent 0deg,
+      rgba(255, 244, 206, 0.28) 15deg,
+      rgba(255, 249, 224, 0.42) 24deg,
+      transparent 40deg
+    ),
+    radial-gradient(ellipse 75% 65% at 50% 42%, rgba(255, 240, 196, 0.26), transparent 72%);
+}
+
+/* Warm bounce highlight onto the honey-oak top ledge beneath the cover */
+.book-card::after {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: calc(var(--meta-h) + var(--shelf-board-h) - 10px);
+  height: 18px;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(255, 244, 204, 0.62) 0%,
+    rgba(255, 224, 152, 0.24) 54%,
+    transparent 78%
+  );
+}
+
+.book-card:hover::before,
+.book-card:focus-visible::before,
+.book-card:hover::after,
+.book-card:focus-visible::after {
+  opacity: 1;
+}
+
+.book-card:hover,
+.book-card:focus-visible {
+  z-index: 3;
 }
 
 .book-card:focus-visible {
-  outline: 2px solid #c84b31;
-  outline-offset: 3px;
+  outline: 2px solid #fff3cf;
+  outline-offset: 4px;
+}
+
+/* Subtly dim unselected sibling book cards (never dim .shelf__item) */
+.shelf:has(.book-card:hover, .book-card:focus-visible)
+  .shelf__item:not(:has(.book-card:hover, .book-card:focus-visible))
+  .book-card {
+  opacity: 0.72;
+  filter: brightness(0.86) saturate(0.9);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .book-card,
+  .book-card::before,
+  .book-card::after,
+  .book-card__cover {
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease,
+      filter 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .book-card:hover .book-card__cover,
+  .book-card:focus-visible .book-card__cover {
+    transform: translateY(-6px);
+    box-shadow:
+      inset 4px 0 8px rgba(0, 0, 0, 0.14),
+      0 18px 30px rgba(36, 16, 2, 0.72),
+      0 6px 12px rgba(28, 12, 0, 0.52);
+  }
 }
 
 .book-card__cover {
   aspect-ratio: var(--book-aspect, 2115 / 2990);
   width: 100%;
-  border-radius: 4px;
+  margin-top: auto;
+  border-radius: 2px 4px 3px 2px;
   overflow: hidden;
   background: #fdfbf7;
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.25),
-    0 10px 24px -4px rgba(0, 0, 0, 0.5);
+    inset 4px 0 8px rgba(0, 0, 0, 0.14),
+    0 12px 22px rgba(36, 16, 2, 0.62),
+    0 3px 6px rgba(28, 12, 0, 0.48),
+    0 1px 0 rgba(0, 0, 0, 0.45);
 }
 
 .book-card__img {
@@ -103,25 +336,40 @@ body {
 .book-card__meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  justify-content: center;
+  gap: 2px;
+  height: var(--meta-h);
+  margin-top: calc(var(--shelf-board-h) - 2px);
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(34, 18, 6, 0.84);
+  border: 1px solid rgba(250, 224, 170, 0.28);
+  box-shadow: 0 3px 8px rgba(28, 12, 2, 0.48);
+  text-align: center;
 }
 
 .book-card__title {
-  font-size: 17px;
+  font-size: clamp(13.5px, 2vw, 15.5px);
   font-weight: 700;
-  color: #fdfbf7;
+  line-height: 1.2;
+  color: #fff8eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .book-card__subtitle {
-  font-size: 13px;
-  line-height: 1.4;
-  color: rgba(246, 243, 236, 0.72);
+  font-size: clamp(11px, 1.5vw, 12px);
+  line-height: 1.25;
+  color: rgba(255, 240, 214, 0.86);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .book-card__pages {
-  margin-top: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: rgba(246, 243, 236, 0.58);
+  color: #f6cf86;
 }

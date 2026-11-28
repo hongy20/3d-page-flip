@@ -1,0 +1,207 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(164, 108, 44, 0.16), transparent 58%),
+    linear-gradient(180deg, #1b1510 0%, #120e0b 100%);
+  color: #f8f1e4;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow-y: auto;
+}
+
+.settings-header {
+  padding: clamp(20px, 4vw, 36px) clamp(16px, 4.5vw, 48px) 20px;
+  background: linear-gradient(180deg, rgba(107, 64, 24, 0.36), rgba(34, 21, 11, 0.18));
+  border-bottom: 1px solid rgba(246, 207, 134, 0.18);
+}
+
+.settings-header__inner {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.settings-back,
+.settings-back:link,
+.settings-back:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid rgba(246, 207, 134, 0.28);
+  border-radius: 999px;
+  background: rgba(38, 24, 12, 0.72);
+  color: #f8f1e4;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+
+.settings-back:hover {
+  background: rgba(145, 92, 36, 0.55);
+  border-color: rgba(246, 207, 134, 0.55);
+  color: #ffffff;
+}
+
+.settings-back:focus-visible {
+  outline: 2px solid #f6cf86;
+  outline-offset: 3px;
+}
+
+.settings-header__title {
+  margin-top: 16px;
+  font-size: clamp(24px, 3.2vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff8eb;
+}
+
+.settings-header__subtitle {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(248, 241, 228, 0.78);
+}
+
+.settings {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 36px) clamp(16px, 4.5vw, 48px) 56px;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.setting-group {
+  border: 1px solid rgba(246, 207, 134, 0.16);
+  border-radius: 12px;
+  padding: clamp(16px, 3vw, 24px);
+  background: rgba(34, 24, 16, 0.72);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.setting-group__legend {
+  padding: 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff8eb;
+}
+
+.setting-group__intro {
+  margin-bottom: 14px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: rgba(248, 241, 228, 0.76);
+}
+
+.setting-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-option {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(248, 241, 228, 0.14);
+  border-radius: 10px;
+  background: rgba(24, 18, 13, 0.75);
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.setting-option:hover {
+  border-color: rgba(246, 207, 134, 0.4);
+  background: rgba(44, 31, 19, 0.85);
+}
+
+.setting-option:has(input:checked) {
+  border-color: #f6cf86;
+  background: rgba(114, 73, 28, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(246, 207, 134, 0.25);
+}
+
+.setting-option:has(input:focus-visible) {
+  outline: 2px solid #f6cf86;
+  outline-offset: 2px;
+}
+
+.setting-option input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #f6cf86;
+  cursor: pointer;
+}
+
+.setting-option__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.setting-option__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff8eb;
+}
+
+.setting-option__desc {
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(248, 241, 228, 0.8);
+}
+
+.setting-option__reason {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(200, 75, 49, 0.16);
+  border: 1px solid rgba(235, 132, 108, 0.36);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #ffd7cd;
+}
+
+.setting-option--disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  background: rgba(20, 16, 12, 0.55);
+}
+
+.setting-option--disabled:hover {
+  border-color: rgba(248, 241, 228, 0.14);
+  background: rgba(20, 16, 12, 0.55);
+}
+
+.setting-option--disabled input {
+  cursor: not-allowed;
+}
+
+.settings-status {
+  min-height: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f6cf86;
+}

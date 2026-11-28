@@ -2,7 +2,29 @@ import "./style.css";
 import { type BookManifest, getBookPagePaths, resolveBook } from "./books/catalog";
 import { detectHtmlInCanvas, showUnsupportedMessage } from "./gl/featureDetect";
 import { initBookRenderer } from "./gl/renderer";
+import { readSettings } from "./settingsStore";
 import { mountInlineSvgs } from "./svgLoader";
+
+function applyPersistedPreferences(): void {
+  const settings = readSettings();
+  const supportsViewTimeline =
+    typeof CSS !== "undefined" &&
+    typeof CSS.supports === "function" &&
+    CSS.supports("animation-timeline", "view()");
+  const effectiveMode =
+    settings.mode !== "slide" && !supportsViewTimeline ? "slide" : settings.mode;
+
+  document.body.dataset.mode = effectiveMode;
+  document.body.dataset.layout = settings.portraitLayout;
+
+  const settingsLink = document.getElementById("controls-settings");
+  if (settingsLink instanceof HTMLAnchorElement) {
+    const returnPath = `./reader.html${window.location.search}`;
+    settingsLink.href = `./settings.html?return=${encodeURIComponent(returnPath)}`;
+  }
+}
+
+applyPersistedPreferences();
 
 function showBookNotFound(requestedId: string | null): void {
   document.title = "Book Not Found — Dropp";
