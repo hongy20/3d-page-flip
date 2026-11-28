@@ -2,17 +2,23 @@ import { describe, expect, it } from "vitest";
 import {
   AY_END,
   AY_START,
+  CREASE_SWEEP_END,
   CYL_KAPPA_EPS,
   CYL_KAPPA_MAX,
   HALF_PI,
   THETA_MIN,
+  VERTICAL_RESISTANCE_SCALE,
   coneParams,
   cylKappa,
   deformVertexCone,
   deformVertexCurl,
   deformVertexCylinder,
   deformVertexTopCone,
+  maxConeCreaseX,
+  maxCylCreaseX,
   pointerYToConicContribution,
+  solveVerticalCurlControl,
+  targetCreaseNorm,
   turnOpacity,
 } from "./coneMath";
 import { PAGE_ASPECT } from "./planeGeometry";
@@ -161,8 +167,9 @@ describe("turnOpacity", () => {
 });
 
 describe("cylKappa", () => {
-  it("returns 0 at rest, completion, and non-finite inputs, and peaks symmetrically mid-turn", () => {
+  it("returns 0 at rest, completion, and non-finite inputs, and peaks smoothly mid-sweep", () => {
     expect(cylKappa(0)).toBe(0);
+    expect(cylKappa(CREASE_SWEEP_END)).toBe(0);
     expect(cylKappa(1)).toBe(0);
     expect(cylKappa(-1)).toBe(0);
     expect(cylKappa(2)).toBe(0);
@@ -172,20 +179,44 @@ describe("cylKappa", () => {
     expect(cylKappa(Number.NEGATIVE_INFINITY)).toBe(0);
 
     let maxKappa = 0;
-    for (let i = 1; i < 100; i += 1) {
+    for (let i = 1; i < 96; i += 1) {
       const p = i / 100;
       const kPos = cylKappa(p);
       const kNeg = cylKappa(-p);
       expect(kNeg).toBeCloseTo(kPos, 12);
       expect(kPos).toBeGreaterThan(0);
+      expect(kPos).toBeLessThanOrEqual(CYL_KAPPA_MAX);
       if (kPos > maxKappa) {
         maxKappa = kPos;
       }
     }
 
-    expect(maxKappa).toBeCloseTo(CYL_KAPPA_MAX, 2);
-    expect(maxKappa * PAGE_ASPECT).toBeLessThanOrEqual(2.2);
+    expect(maxKappa).toBeGreaterThan(1.5);
     expect(maxKappa * PAGE_ASPECT).toBeLessThan(Math.PI);
+  });
+});
+
+describe("linear crease calibration", () => {
+  it("sweeps cone and cylinder creases proportionally across [PAGE_ASPECT, 0] over [0, CREASE_SWEEP_END]", () => {
+    for (let i = 0; i <= 18; i += 1) {
+      const p = (i / 18) * CREASE_SWEEP_END;
+      const expectedNorm = targetCreaseNorm(p);
+      const { theta, Ay, rho } = coneParams(p);
+      const kappa = cylKappa(p);
+
+      const coneNorm = maxConeCreaseX(theta, Ay, rho) / PAGE_ASPECT;
+      const cylNorm = maxCylCreaseX(kappa, rho) / PAGE_ASPECT;
+
+      expect(Math.abs(coneNorm - expectedNorm)).toBeLessThan(0.025);
+      expect(Math.abs(cylNorm - coneNorm)).toBeLessThan(0.01);
+    }
+
+    const half = coneParams(0.5);
+    expect(half.rho).toBeLessThan(0.4);
+    const botHalf = deformVertexCone(PAGE_ASPECT, 0, half.theta, half.Ay, half.rho);
+    const midHalf = deformVertexCone(PAGE_ASPECT, 0.5, half.theta, half.Ay, half.rho);
+    expect(botHalf[0] / PAGE_ASPECT).toBeGreaterThan(0.15);
+    expect(midHalf[0] / PAGE_ASPECT).toBeGreaterThan(0.5);
   });
 });
 
@@ -392,5 +423,174 @@ describe("pointerYToConicContribution", () => {
     expect(pointerYToConicContribution(200, 100, 0)).toBe(1);
     expect(pointerYToConicContribution(200, 100, -10)).toBe(1);
     expect(pointerYToConicContribution(Number.NaN, 100, 400)).toBe(1);
+  });
+});
+
+describe("cornerBend and solveVerticalCurlControl", () => {
+  const grid = sampleGrid(10);
+
+  it("preserves domain invariants, finite vertices, and flat endpoints across cornerBend in [0, 1]", () => {
+    for (const bend of [0, 0.5, 1]) {
+      const atZero = coneParams(0, PAGE_ASPECT, bend);
+      expect(atZero.theta).toBe(HALF_PI);
+      expect(atZero.rho).toBe(0);
+      expect(atZero.Ay).toBe(AY_START);
+
+      const atOne = coneParams(1, PAGE_ASPECT, bend);
+      expect(atOne.theta).toBeCloseTo(HALF_PI, 12);
+      expect(atOne.rho).toBeCloseTo(Math.PI, 12);
+      expect(atOne.Ay).toBeCloseTo(AY_END, 12);
+
+      for (let i = -20; i <= 20; i += 1) {
+        const p = i / 20;
+        const { theta, Ay, rho } = coneParams(p, PAGE_ASPECT, bend);
+        expect(Ay).toBeLessThan(0);
+        expect(theta).toBeGreaterThan(THETA_MIN);
+        expect(theta).toBeLessThanOrEqual(HALF_PI);
+        expect(rho).toBeGreaterThanOrEqual(0);
+        expect(rho).toBeLessThanOrEqual(Math.PI);
+
+        const sinTheta = Math.sin(theta);
+        for (const [px, py] of grid) {
+          const R = Math.hypot(px, py - Ay);
+          const alpha = Math.asin(Math.min(1, Math.max(-1, px / R)));
+          expect(alpha / sinTheta).toBeLessThan(Math.PI);
+          const [vx, vy, vz] = deformVertexCone(px, py, theta, Ay, rho);
+          expect(Number.isFinite(vx)).toBe(true);
+          expect(Number.isFinite(vy)).toBe(true);
+          expect(Number.isFinite(vz)).toBe(true);
+        }
+      }
+    }
+
+    const base = coneParams(0.35, PAGE_ASPECT, 0);
+    const mid = coneParams(0.35, PAGE_ASPECT, 0.5);
+    const max = coneParams(0.35, PAGE_ASPECT, 1);
+    const baseCorner = deformVertexCone(PAGE_ASPECT, 0, base.theta, base.Ay, base.rho);
+    const midCorner = deformVertexCone(PAGE_ASPECT, 0, mid.theta, mid.Ay, mid.rho);
+    const maxCorner = deformVertexCone(PAGE_ASPECT, 0, max.theta, max.Ay, max.rho);
+    expect(midCorner[1]).toBeGreaterThan(baseCorner[1]);
+    expect(maxCorner[1]).toBeGreaterThan(midCorner[1]);
+    expect(maxCorner[0]).toBeLessThan(baseCorner[0]);
+  });
+
+  it("anchors bottom-right corner curl and bends deeper upward with smooth resistance", () => {
+    expect(VERTICAL_RESISTANCE_SCALE).toBeGreaterThan(0);
+
+    const start = solveVerticalCurlControl(0.35, 0.9 * PAGE_ASPECT, 0.1, 0);
+    expect(start.conicContribution).toBeCloseTo(0.8, 2);
+    expect(start.cornerBend).toBe(0);
+
+    const dragUp = solveVerticalCurlControl(0.35, 0.9 * PAGE_ASPECT, 0.1, 0.15);
+    expect(dragUp.conicContribution).toBe(1);
+    expect(dragUp.cornerBend).toBeGreaterThan(0);
+    expect(dragUp.cornerBend).toBeLessThan(0.5);
+
+    const dragHigher = solveVerticalCurlControl(0.35, 0.9 * PAGE_ASPECT, 0.1, 0.5);
+    expect(dragHigher.conicContribution).toBe(1);
+    expect(dragHigher.cornerBend).toBeGreaterThan(dragUp.cornerBend);
+    expect(dragHigher.cornerBend).toBeLessThan(1);
+
+    const baseParams = coneParams(0.35, PAGE_ASPECT, start.cornerBend);
+    const upParams = coneParams(0.35, PAGE_ASPECT, dragUp.cornerBend);
+    const higherParams = coneParams(0.35, PAGE_ASPECT, dragHigher.cornerBend);
+    const yBase = deformVertexCurl(
+      0.9 * PAGE_ASPECT,
+      0.1,
+      baseParams.theta,
+      baseParams.Ay,
+      baseParams.rho,
+      cylKappa(0.35),
+      start.conicContribution,
+    )[1];
+    const yUp = deformVertexCurl(
+      0.9 * PAGE_ASPECT,
+      0.1,
+      upParams.theta,
+      upParams.Ay,
+      upParams.rho,
+      cylKappa(0.35),
+      dragUp.conicContribution,
+    )[1];
+    const yHigher = deformVertexCurl(
+      0.9 * PAGE_ASPECT,
+      0.1,
+      higherParams.theta,
+      higherParams.Ay,
+      higherParams.rho,
+      cylKappa(0.35),
+      dragHigher.conicContribution,
+    )[1];
+    expect(yUp - yBase).toBeGreaterThan(0);
+    expect(yUp - yBase).toBeLessThan(0.15);
+    expect(yHigher - yUp).toBeGreaterThan(0);
+  });
+
+  it("tracks a grabbed mid-right feature upward and downward with damped resistance", () => {
+    const px = 0.85 * PAGE_ASPECT;
+    const py = 0.5;
+    const p = 0.35;
+    const kappa = cylKappa(p);
+
+    const rest = solveVerticalCurlControl(p, px, py, 0);
+    expect(rest.conicContribution).toBeCloseTo(0, 6);
+    expect(rest.cornerBend).toBe(0);
+
+    const gentle = solveVerticalCurlControl(p, px, py, 0.05);
+    expect(gentle.conicContribution).toBeGreaterThan(0);
+    expect(gentle.conicContribution).toBeLessThan(1);
+    expect(gentle.cornerBend).toBe(0);
+
+    const up = solveVerticalCurlControl(p, px, py, 0.15);
+    expect(up.conicContribution).toBeGreaterThanOrEqual(gentle.conicContribution);
+    const upParams = coneParams(p, PAGE_ASPECT, up.cornerBend);
+    const upY = deformVertexCurl(
+      px,
+      py,
+      upParams.theta,
+      upParams.Ay,
+      upParams.rho,
+      kappa,
+      up.conicContribution,
+    )[1];
+    expect(upY - py).toBeGreaterThan(0);
+    expect(upY - py).toBeLessThan(0.15);
+
+    const farUp = solveVerticalCurlControl(p, px, py, 0.45);
+    const farParams = coneParams(p, PAGE_ASPECT, farUp.cornerBend);
+    const farY = deformVertexCurl(
+      px,
+      py,
+      farParams.theta,
+      farParams.Ay,
+      farParams.rho,
+      kappa,
+      farUp.conicContribution,
+    )[1];
+    expect(farY - upY).toBeGreaterThan(0);
+    expect((farY - upY) / 0.3).toBeLessThan((upY - py) / 0.15);
+
+    const down = solveVerticalCurlControl(p, px, py, -0.15);
+    expect(down.conicContribution).toBeCloseTo(-up.conicContribution, 4);
+    const downParams = coneParams(p, PAGE_ASPECT, down.cornerBend);
+    const downY = deformVertexCurl(
+      px,
+      py,
+      downParams.theta,
+      downParams.Ay,
+      downParams.rho,
+      kappa,
+      down.conicContribution,
+    )[1];
+    expect(downY - py).toBeCloseTo(-(upY - py), 4);
+
+    const topGrabDown = solveVerticalCurlControl(p, px, 0.9, -1.5);
+    expect(topGrabDown.conicContribution).toBe(-1);
+    expect(topGrabDown.cornerBend).toBeGreaterThan(0.5);
+    expect(topGrabDown.cornerBend).toBeLessThanOrEqual(1);
+
+    const flat = solveVerticalCurlControl(0, Number.NaN, Number.NaN, Number.NaN);
+    expect(Number.isFinite(flat.conicContribution)).toBe(true);
+    expect(Number.isFinite(flat.cornerBend)).toBe(true);
   });
 });

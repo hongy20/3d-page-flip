@@ -6,6 +6,7 @@ import {
   coneParams,
   cylKappa,
   pointerYToConicContribution,
+  solveVerticalCurlControl,
   turnOpacity,
 } from "./coneMath";
 import { createGeometrySync } from "./geometrySync";
@@ -33,6 +34,7 @@ const EPS = 1e-4;
 const PROGRESS_CHANGE_EPS = 1e-5;
 const LIGHT_CHANGE_EPS = 1e-5;
 const CONIC_CHANGE_EPS = 1e-5;
+const PENDING_CONIC_TTL_MS = 300;
 
 function compileShader(gl: WebGL2RenderingContext, type: GLenum, source: string): WebGLShader {
   const shader = gl.createShader(type);
@@ -141,8 +143,19 @@ export function initBookRenderer(
   let lightPos: Vec3 = options?.lightPos ?? DEFAULT_LIGHT_POS;
   let activeConicContribution = 1;
   let lastConicContribution = 1;
+  let activeCornerBend = 0;
+  let lastCornerBend = 0;
   let pendingConicContribution: number | null = null;
+  let pendingCornerBend = 0;
+  let pendingConicTimestamp = 0;
   let activeTurnPage = -1;
+  let activePointerId: number | null = null;
+  let activeTouchId: number | null = null;
+  let isPointerDragging = false;
+  let grabStartClientY = 0;
+  let activePointerClientY = 0;
+  let grabNormX = 1;
+  let grabNormY = 0;
   let needsResizeTextureCheck = true;
   let textureDirty = true;
   let resizeDirty = true;
@@ -201,7 +214,7 @@ export function initBookRenderer(
     return true;
   }
 
-  function renderFrame(): void {
+  function renderFrame(now = performance.now()): void {
     rafId = null;
     if (disposed) {
       return;
@@ -245,26 +258,41 @@ export function initBookRenderer(
       }
 
       if (turningIdx !== -1) {
+        const hasFreshPendingConic =
+          pendingConicContribution !== null &&
+          (isPointerDragging || now - pendingConicTimestamp <= PENDING_CONIC_TTL_MS);
+
         if (activeTurnPage === -1) {
-          activeConicContribution = pendingConicContribution ?? 1;
+          activeConicContribution = hasFreshPendingConic ? (pendingConicContribution ?? 1) : 1;
+          activeCornerBend = hasFreshPendingConic ? pendingCornerBend : 0;
           pendingConicContribution = null;
+          pendingCornerBend = 0;
           activeTurnPage = turningIdx;
         } else if (turningIdx !== activeTurnPage) {
-          if (pendingConicContribution !== null) {
-            activeConicContribution = pendingConicContribution;
-            pendingConicContribution = null;
+          if (hasFreshPendingConic) {
+            activeConicContribution = pendingConicContribution ?? activeConicContribution;
+            activeCornerBend = pendingCornerBend;
           }
+          pendingConicContribution = null;
+          pendingCornerBend = 0;
           activeTurnPage = turningIdx;
         }
       } else if (underIdx === -1) {
         activeTurnPage = -1;
+        activeCornerBend = 0;
+        if (
+          pendingConicContribution !== null &&
+          !isPointerDragging &&
+          now - pendingConicTimestamp > PENDING_CONIC_TTL_MS
+        ) {
+          pendingConicContribution = null;
+          pendingCornerBend = 0;
+        }
       }
     } else {
       activeTurnPage = -1;
+      activeCornerBend = 0;
     }
-
-    const conicChanged =
-      Math.abs(activeConicContribution - lastConicContribution) > CONIC_CHANGE_EPS;
 
     let layoutSignature = "";
     let centeredRect: DOMRect | null = null;
@@ -297,6 +325,29 @@ export function initBookRenderer(
       layoutSignature = sigParts.join("|");
     }
 
+    if (
+      mode === "curl" &&
+      turningIdx !== -1 &&
+      isPointerDragging &&
+      centeredRect &&
+      centeredRect.height > 0
+    ) {
+      const deltaYUp = (grabStartClientY - activePointerClientY) / centeredRect.height;
+      const solved = solveVerticalCurlControl(
+        progressScratch[turningIdx],
+        grabNormX * mesh.width,
+        grabNormY,
+        deltaYUp,
+        mesh.width,
+      );
+      activeConicContribution = solved.conicContribution;
+      activeCornerBend = solved.cornerBend;
+    }
+
+    const conicChanged =
+      Math.abs(activeConicContribution - lastConicContribution) > CONIC_CHANGE_EPS ||
+      Math.abs(activeCornerBend - lastCornerBend) > CONIC_CHANGE_EPS;
+
     const layoutChanged = layoutSignature !== lastLayoutSignature;
     const shouldDraw =
       textureDirty ||
@@ -320,6 +371,7 @@ export function initBookRenderer(
     lightDirty = false;
     lastMode = mode;
     lastConicContribution = activeConicContribution;
+    lastCornerBend = activeCornerBend;
     lastLayoutSignature = layoutSignature;
     lastProgress.set(progressScratch);
 
@@ -387,7 +439,7 @@ export function initBookRenderer(
           const turnTex = textureManager.getTexture(pageEntries[turningIdx].content);
           if (turnTex) {
             const p = progressScratch[turningIdx];
-            const { theta, Ay, rho } = coneParams(p);
+            const { theta, Ay, rho } = coneParams(p, mesh.width, activeCornerBend);
             drawPageMesh(
               mvpScratch,
               centeredModel,
@@ -397,7 +449,7 @@ export function initBookRenderer(
               Ay,
               rho,
               activeConicContribution,
-              cylKappa(p),
+              cylKappa(p, mesh.width),
               0,
             );
           }
@@ -458,18 +510,154 @@ export function initBookRenderer(
     scheduleRender();
   }
 
-  function onPointerDown(event: PointerEvent): void {
-    if (event.pointerType === "mouse") {
-      return;
-    }
+  function getCenteredPageRect(): {
+    readonly left: number;
+    readonly top: number;
+    readonly width: number;
+    readonly height: number;
+  } {
     const canvasRect = canvas.getBoundingClientRect();
     const sampleRect = pageEntries[0].frame.getBoundingClientRect();
-    const pageTop = canvasRect.top + (canvasRect.height - sampleRect.height) * 0.5;
-    pendingConicContribution = pointerYToConicContribution(
-      event.clientY,
-      pageTop,
-      sampleRect.height,
-    );
+    return {
+      left: canvasRect.left + (canvasRect.width - sampleRect.width) * 0.5,
+      top: canvasRect.top + (canvasRect.height - sampleRect.height) * 0.5,
+      width: sampleRect.width,
+      height: sampleRect.height,
+    };
+  }
+
+  function beginDrag(clientX: number, clientY: number): void {
+    const pageRect = getCenteredPageRect();
+    isPointerDragging = true;
+    grabStartClientY = clientY;
+    activePointerClientY = clientY;
+    grabNormX =
+      pageRect.width > 0 ? Math.min(1, Math.max(0, (clientX - pageRect.left) / pageRect.width)) : 1;
+    grabNormY =
+      pageRect.height > 0
+        ? Math.min(1, Math.max(0, 1 - (clientY - pageRect.top) / pageRect.height))
+        : 0;
+
+    const initialConic = pointerYToConicContribution(clientY, pageRect.top, pageRect.height);
+    if (activeTurnPage !== -1) {
+      scheduleRender();
+    } else {
+      pendingConicContribution = initialConic;
+      pendingCornerBend = 0;
+      pendingConicTimestamp = performance.now();
+    }
+  }
+
+  function moveDrag(clientY: number): void {
+    activePointerClientY = clientY;
+    if (activeTurnPage !== -1) {
+      scheduleRender();
+    } else {
+      const pageRect = getCenteredPageRect();
+      const deltaYUp = pageRect.height > 0 ? (grabStartClientY - clientY) / pageRect.height : 0;
+      const solved = solveVerticalCurlControl(
+        0,
+        grabNormX * mesh.width,
+        grabNormY,
+        deltaYUp,
+        mesh.width,
+      );
+      pendingConicContribution = solved.conicContribution;
+      pendingCornerBend = solved.cornerBend;
+      pendingConicTimestamp = performance.now();
+    }
+  }
+
+  function endDrag(): void {
+    if (!isPointerDragging) {
+      return;
+    }
+    isPointerDragging = false;
+    activePointerId = null;
+    activeTouchId = null;
+  }
+
+  function onPointerDown(event: PointerEvent): void {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    activePointerId = event.pointerId;
+    if (event.pointerType !== "touch") {
+      activeTouchId = null;
+    }
+    beginDrag(event.clientX, event.clientY);
+  }
+
+  function onPointerMove(event: PointerEvent): void {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    if (event.pointerType === "mouse" && event.buttons === 0) {
+      endDrag();
+      return;
+    }
+    moveDrag(event.clientY);
+  }
+
+  function onPointerUp(event: PointerEvent): void {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    endDrag();
+  }
+
+  function onPointerCancel(event: PointerEvent): void {
+    if (activePointerId !== event.pointerId) {
+      return;
+    }
+    if (event.pointerType === "touch" && activeTouchId !== null) {
+      activePointerId = null;
+      return;
+    }
+    endDrag();
+  }
+
+  function onTouchStart(event: TouchEvent): void {
+    if (activeTouchId !== null || event.changedTouches.length === 0) {
+      return;
+    }
+    const touch = event.changedTouches[0];
+    activeTouchId = touch.identifier;
+    if (!isPointerDragging) {
+      beginDrag(touch.clientX, touch.clientY);
+    }
+  }
+
+  function onTouchMove(event: TouchEvent): void {
+    if (activeTouchId === null || activePointerId !== null) {
+      return;
+    }
+    for (let i = 0; i < event.changedTouches.length; i += 1) {
+      const touch = event.changedTouches[i];
+      if (touch.identifier === activeTouchId) {
+        moveDrag(touch.clientY);
+        return;
+      }
+    }
+  }
+
+  function onTouchEndOrCancel(event: TouchEvent): void {
+    if (activeTouchId === null) {
+      return;
+    }
+    for (let i = 0; i < event.changedTouches.length; i += 1) {
+      if (event.changedTouches[i].identifier === activeTouchId) {
+        endDrag();
+        return;
+      }
+    }
+  }
+
+  function onNonPointerNavigation(): void {
+    if (!isPointerDragging && activePointerId === null && activeTouchId === null) {
+      pendingConicContribution = null;
+      pendingCornerBend = 0;
+    }
   }
 
   updateCanvasSize();
@@ -483,6 +671,15 @@ export function initBookRenderer(
   resizeObserver.observe(canvas);
   canvas.addEventListener("paint", onPaint);
   book.addEventListener("pointerdown", onPointerDown, { passive: true });
+  window.addEventListener("pointermove", onPointerMove, { passive: true });
+  window.addEventListener("pointerup", onPointerUp, { passive: true });
+  window.addEventListener("pointercancel", onPointerCancel, { passive: true });
+  book.addEventListener("touchstart", onTouchStart, { passive: true });
+  window.addEventListener("touchmove", onTouchMove, { passive: true });
+  window.addEventListener("touchend", onTouchEndOrCancel, { passive: true });
+  window.addEventListener("touchcancel", onTouchEndOrCancel, { passive: true });
+  book.addEventListener("wheel", onNonPointerNavigation, { passive: true });
+  window.addEventListener("keydown", onNonPointerNavigation, { passive: true });
 
   canvas.requestPaint?.();
   scheduleRender();
@@ -517,6 +714,15 @@ export function initBookRenderer(
       resizeObserver.disconnect();
       canvas.removeEventListener("paint", onPaint);
       book.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerCancel);
+      book.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEndOrCancel);
+      window.removeEventListener("touchcancel", onTouchEndOrCancel);
+      book.removeEventListener("wheel", onNonPointerNavigation);
+      window.removeEventListener("keydown", onNonPointerNavigation);
       textureManager.dispose();
       mesh.dispose();
       gl.deleteProgram(program);
