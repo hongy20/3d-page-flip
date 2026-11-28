@@ -1,14 +1,24 @@
+import { PAGE_ASPECT } from "./planeGeometry";
+
 export const HALF_PI = Math.PI / 2;
 export const THETA_MIN = 0.25;
 export const AY_START = -0.35;
 export const AY_END = -15.0;
 export const CYL_KAPPA_MAX = 2.0;
 export const CYL_KAPPA_EPS = 1e-4;
+export const CREASE_SWEEP_END = 0.96;
+export const MAX_VERTICAL_CURL_CONTROL = 2;
+export const VERTICAL_RESISTANCE_SCALE = 0.55;
 
 export interface ConeParams {
   readonly theta: number;
   readonly Ay: number;
   readonly rho: number;
+}
+
+export interface VerticalCurlControl {
+  readonly conicContribution: number;
+  readonly cornerBend: number;
 }
 
 export type Vec3Tuple = readonly [number, number, number];
@@ -135,31 +145,176 @@ export function deformVertexCurl(
   ];
 }
 
-/**
- * Maps normalized CSS `--progress` `p in [-1, 1]` to three-stage empirical cone
- * parameters `(theta, Ay, rho)`.
- */
-export function coneParams(p: number): ConeParams {
-  const t = Number.isFinite(p) ? clamp(Math.abs(p), 0, 1) : 0;
-  const s = t * t * (3 - 2 * t);
+const CREASE_SAMPLES = 24;
+const SOLVE_ITERS = 20;
 
-  const rho = clamp(Math.PI * (0.2 * t + 0.8 * s), 0, Math.PI);
-  const Ay = -(0.35 + 0.65 * t + 14.0 * t * t * t * t);
-  const curlWave = t === 0 || t === 1 ? 0 : Math.sin(Math.PI * Math.pow(t, 0.75));
-  const theta = clamp(HALF_PI - 0.82 * curlWave, THETA_MIN + 1e-4, HALF_PI);
+/**
+ * Returns the maximum world-space X coordinate along a horizontal scanline (`py`)
+ * of the cone-deformed page, representing the visible bending crease edge.
+ */
+export function maxConeCreaseX(
+  theta: number,
+  Ay: number,
+  rho: number,
+  pageWidth = PAGE_ASPECT,
+  py = 0.5,
+): number {
+  let maxX = Number.NEGATIVE_INFINITY;
+  for (let i = 0; i <= CREASE_SAMPLES; i += 1) {
+    const px = (i / CREASE_SAMPLES) * pageWidth;
+    const [vx] = deformVertexCone(px, py, theta, Ay, rho);
+    if (vx > maxX) {
+      maxX = vx;
+    }
+  }
+  return maxX;
+}
+
+/**
+ * Returns the maximum world-space X coordinate of the cylinder-deformed page,
+ * representing the visible bending crease edge.
+ */
+export function maxCylCreaseX(kappa: number, rho: number, pageWidth = PAGE_ASPECT): number {
+  if (rho >= HALF_PI) {
+    return 0;
+  }
+  if (kappa <= CYL_KAPPA_EPS) {
+    return pageWidth * Math.cos(rho);
+  }
+  if (kappa * pageWidth + rho <= HALF_PI) {
+    return (Math.sin(kappa * pageWidth + rho) - Math.sin(rho)) / kappa;
+  }
+  return (1 - Math.sin(rho)) / kappa;
+}
+
+/**
+ * Normalized world-space target crease position in `[0, 1]` over `[0, CREASE_SWEEP_END]`,
+ * gently eased so perspective foreshortening keeps the turning edge near mid-page at `|p| = 0.5`.
+ */
+export function targetCreaseNorm(t: number): number {
+  if (t <= 0) {
+    return 1;
+  }
+  if (t >= CREASE_SWEEP_END) {
+    return 0;
+  }
+  return 1 - Math.pow(t / CREASE_SWEEP_END, 1.18);
+}
+
+function rhoCurve(t: number): number {
+  if (t <= 0) {
+    return 0;
+  }
+  if (t >= 1) {
+    return Math.PI;
+  }
+  if (t < CREASE_SWEEP_END) {
+    const u = t / CREASE_SWEEP_END;
+    const flatRho = Math.acos(clamp(targetCreaseNorm(t), 0, 1));
+    return flatRho * (0.05 + 0.95 * Math.pow(u, 1.9));
+  }
+  const u = (t - CREASE_SWEEP_END) / (1 - CREASE_SWEEP_END);
+  return HALF_PI + HALF_PI * (u * u * (3 - 2 * u));
+}
+
+function solveBaseConeParams(t: number, pageWidth: number): ConeParams {
+  const Ay = -(0.35 + 0.15 * t + 14.5 * Math.pow(t, 8));
+  const rho = rhoCurve(t);
+  let theta = HALF_PI;
+
+  if (t > 0 && t < CREASE_SWEEP_END) {
+    const targetX = pageWidth * targetCreaseNorm(t);
+    const maxAlpha = Math.asin(clamp(pageWidth / Math.hypot(pageWidth, -Ay), -1, 1));
+    const minSafeTheta = Math.max(
+      THETA_MIN + 1e-4,
+      Math.asin(Math.min(1, maxAlpha / (0.88 * Math.PI))),
+    );
+    if (maxConeCreaseX(HALF_PI, Ay, rho, pageWidth, 0.5) <= targetX) {
+      theta = HALF_PI;
+    } else if (maxConeCreaseX(minSafeTheta, Ay, rho, pageWidth, 0.5) >= targetX) {
+      theta = minSafeTheta;
+    } else {
+      let lo = minSafeTheta;
+      let hi = HALF_PI;
+      for (let it = 0; it < SOLVE_ITERS; it += 1) {
+        const mid = 0.5 * (lo + hi);
+        if (maxConeCreaseX(mid, Ay, rho, pageWidth, 0.5) < targetX) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      theta = 0.5 * (lo + hi);
+    }
+  }
 
   return { theta, Ay, rho };
 }
 
+function applyCornerBend(
+  base: ConeParams,
+  t: number,
+  pageWidth: number,
+  cornerBend: number,
+): ConeParams {
+  const rawBend = Number.isFinite(cornerBend) ? clamp(cornerBend, 0, 1) : 0;
+  const bend = rawBend * (1 - smoothstep(0.85, 1, t));
+  if (bend <= 0 || t === 0 || t === 1) {
+    return base;
+  }
+
+  const Ay = Math.min(-0.04, base.Ay * Math.pow(0.28, bend));
+  const maxAlpha = Math.asin(clamp(pageWidth / Math.hypot(pageWidth, -Ay), -1, 1));
+  const safeMinTheta = Math.max(
+    THETA_MIN + 1e-4,
+    Math.asin(Math.min(1, maxAlpha / (0.94 * Math.PI))),
+  );
+  const theta = clamp(
+    base.theta - 0.16 * bend * (1 - smoothstep(0.75, 1, t)),
+    safeMinTheta,
+    HALF_PI,
+  );
+  return { theta, Ay, rho: base.rho };
+}
+
 /**
- * Maps normalized CSS `--progress` `p in [-1, 1]` to cylinder curvature `kappa >= 0`.
+ * Maps normalized CSS `--progress` `p in [-1, 1]` to three-stage empirical cone
+ * parameters `(theta, Ay, rho)` calibrated so the visible crease sweeps proportionally
+ * across `[pageWidth, 0]` over `|p| in [0, CREASE_SWEEP_END]` while keeping deep
+ * paper curl early, with optional `cornerBend in [0, 1]` tightening the grabbed corner.
  */
-export function cylKappa(p: number): number {
+export function coneParams(p: number, pageWidth = PAGE_ASPECT, cornerBend = 0): ConeParams {
   const t = Number.isFinite(p) ? clamp(Math.abs(p), 0, 1) : 0;
-  if (t === 0 || t === 1) {
+  const safeWidth = Number.isFinite(pageWidth) && pageWidth > 0 ? pageWidth : PAGE_ASPECT;
+  return applyCornerBend(solveBaseConeParams(t, safeWidth), t, safeWidth, cornerBend);
+}
+
+/**
+ * Maps normalized CSS `--progress` `p in [-1, 1]` to cylinder curvature `kappa >= 0`
+ * aligned with the calibrated crease trajectory.
+ */
+export function cylKappa(p: number, pageWidth = PAGE_ASPECT): number {
+  const t = Number.isFinite(p) ? clamp(Math.abs(p), 0, 1) : 0;
+  if (t === 0 || t >= CREASE_SWEEP_END) {
     return 0;
   }
-  return CYL_KAPPA_MAX * Math.sin(Math.PI * Math.pow(t, 0.75));
+  const { theta, Ay, rho } = coneParams(t, pageWidth);
+  const targetX = maxConeCreaseX(theta, Ay, rho, pageWidth, 0.5);
+  const flatX = pageWidth * Math.cos(rho);
+  if (targetX >= flatX - 1e-5) {
+    return 0;
+  }
+  let lo = 0;
+  let hi = CYL_KAPPA_MAX;
+  for (let it = 0; it < SOLVE_ITERS; it += 1) {
+    const mid = 0.5 * (lo + hi);
+    if (maxCylCreaseX(mid, rho, pageWidth) > targetX) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return 0.5 * (lo + hi);
 }
 
 /**
@@ -181,6 +336,94 @@ export function pointerYToConicContribution(
   }
   const yNorm = clamp((clientY - rectTop) / rectHeight, 0, 1);
   return 2 * yNorm - 1;
+}
+
+const VERTICAL_SOLVE_ITERS = 18;
+
+function evalCurlYAtControl(
+  px: number,
+  py: number,
+  t: number,
+  base: ConeParams,
+  v: number,
+  pageWidth: number,
+): number {
+  const c = clamp(v, -1, 1);
+  const bend = clamp(Math.abs(v) - 1, 0, 1);
+  const { theta, Ay } = applyCornerBend(base, t, pageWidth, bend);
+  const coneY = c < 0 ? 1 - coneLocal(px, 1 - py, theta, Ay)[1] : coneLocal(px, py, theta, Ay)[1];
+  return py + (coneY - py) * Math.abs(c);
+}
+
+/**
+ * Solves `(conicContribution, cornerBend)` so a grabbed page-local point `(grabX, grabY)`
+ * tracks upward vertical pointer displacement `deltaYUp` monotonically as closely as the
+ * cone and cylinder models allow, saturating at the cone's geometric bending limit.
+ */
+export function solveVerticalCurlControl(
+  p: number,
+  grabX: number,
+  grabY: number,
+  deltaYUp: number,
+  pageWidth = PAGE_ASPECT,
+): VerticalCurlControl {
+  const t = Number.isFinite(p) ? clamp(Math.abs(p), 0, 1) : 0;
+  const safeWidth = Number.isFinite(pageWidth) && pageWidth > 0 ? pageWidth : PAGE_ASPECT;
+  const safeGrabY = Number.isFinite(grabY) ? clamp(grabY, 0, 1) : 0;
+  const safeDeltaY = Number.isFinite(deltaYUp) ? deltaYUp : 0;
+  const pxRef = Math.max(
+    Number.isFinite(grabX) ? clamp(grabX, 0, safeWidth) : safeWidth,
+    0.25 * safeWidth,
+  );
+  const vStart = 1 - 2 * safeGrabY;
+  const base = solveBaseConeParams(t, safeWidth);
+
+  const yMin = evalCurlYAtControl(pxRef, safeGrabY, t, base, -MAX_VERTICAL_CURL_CONTROL, safeWidth);
+  const yMax = evalCurlYAtControl(pxRef, safeGrabY, t, base, MAX_VERTICAL_CURL_CONTROL, safeWidth);
+
+  let v: number;
+  if (Math.abs(safeDeltaY) <= 1e-9) {
+    v = vStart;
+  } else if (yMax - yMin <= 1e-4) {
+    const vSpan =
+      safeDeltaY >= 0 ? MAX_VERTICAL_CURL_CONTROL - vStart : vStart + MAX_VERTICAL_CURL_CONTROL;
+    v = clamp(
+      vStart +
+        Math.sign(safeDeltaY) * vSpan * Math.tanh(Math.abs(safeDeltaY) / VERTICAL_RESISTANCE_SCALE),
+      -MAX_VERTICAL_CURL_CONTROL,
+      MAX_VERTICAL_CURL_CONTROL,
+    );
+  } else {
+    const yBase = evalCurlYAtControl(pxRef, safeGrabY, t, base, vStart, safeWidth);
+    const span = safeDeltaY >= 0 ? yMax - yBase : yBase - yMin;
+    const effDeltaY =
+      span > 1e-6
+        ? Math.sign(safeDeltaY) * span * Math.tanh(Math.abs(safeDeltaY) / VERTICAL_RESISTANCE_SCALE)
+        : 0;
+    const yTarget = yBase + effDeltaY;
+    if (yTarget <= yMin) {
+      v = -MAX_VERTICAL_CURL_CONTROL;
+    } else if (yTarget >= yMax) {
+      v = MAX_VERTICAL_CURL_CONTROL;
+    } else {
+      let lo = -MAX_VERTICAL_CURL_CONTROL;
+      let hi = MAX_VERTICAL_CURL_CONTROL;
+      for (let it = 0; it < VERTICAL_SOLVE_ITERS; it += 1) {
+        const mid = 0.5 * (lo + hi);
+        if (evalCurlYAtControl(pxRef, safeGrabY, t, base, mid, safeWidth) < yTarget) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+      v = 0.5 * (lo + hi);
+    }
+  }
+
+  return {
+    conicContribution: clamp(v, -1, 1),
+    cornerBend: clamp(Math.abs(v) - 1, 0, 1),
+  };
 }
 
 /**
